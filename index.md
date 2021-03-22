@@ -1,4 +1,4 @@
-Interlude is an open source keyboard-based rhythm game written in F# (Legacy version in C# currently available, trying to release F# rewrite by christmas).
+Interlude is an open source keyboard-based rhythm game written in F#/.NET Core (Legacy version in C# also still available for now).
 
 ## Check it out
 
@@ -9,8 +9,15 @@ You can join the discord server [here](https://discord.gg/tA22tWR).
 
 ## Why another rhythm game?
 
-Cause osu!mania kinda sucks in a lot of ways but I think hold-style and SV-style charts are still worthwhile.
+The main popular VSRGs out there (osu! + some others) are "incomplete" for my rhythm game needs, which are:
+- Supporting Hold-style and SV-style charts in a bit more depth than just tacking them on
+- A difficulty calculator that can guide progress/what songs to play
+- Access to as many charts as possible within one client
+- Support for many keymodes/playstyles
+
 Interlude aims to combine all the good out of similar keyboard games like Stepmania/Etterna/osu!mania/Quaver/LR2. Quaver has similar goals but I believe their difficulty calculator will suffer identical issues to star rating.
+
+Also I'm just having great fun/learning a lot from having a big game project on my hands.
 
 ## Features
 + Support for skins/themes to customise noteskins, interface layout and some other stuff
@@ -23,12 +30,12 @@ Interlude aims to combine all the good out of similar keyboard games like Stepma
 + Column-independent scroll speed changes
 + Rates - Speeding up or slowing down a chart to suit your skill level
 + Upscroll and Downscroll both supported, as well as screencovers
-+ Collections/tools to organise charts
-+ Ingame downloading and importing via etternaonline.com
++ Collections/goals/playlists/tools to organise charts
++ Ingame downloading and importing from other games
 
 ## Planned features..
 + An automatic difficulty calculator that beats all others
-+ A fully featured chart editor
 + BMS support with (optional) scratch lanes
 + Online score servers/leaderboards
 + Regular/weekly challenges for players to complete
++ Probably more
