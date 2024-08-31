@@ -16,6 +16,7 @@ open Prelude.Gameplay
 open Interlude
 open Interlude.Content
 open Interlude.Features.Gameplay
+open Interlude.Features.Stats
 open Interlude.Features.Online
 open Interlude.Web.Shared.Requests
 
@@ -100,7 +101,7 @@ module Printerlude =
         let challenge_level (io: IOContext) =
             match SelectedChart.PATTERNS with
             | Some patterns ->
-                let skills = Skillsets.keymode_skills.[(SelectedChart.keymode() |> int) - 3]
+                let skills = Stats.keymode_skills.[(SelectedChart.keymode() |> int) - 3]
                 for p in [ 0.92; 0.93; 0.94; 0.95; 0.96; 0.97; 0.98; 0.99; 1.0 ] do
                     KeymodeSkillBreakdown.what_if patterns.Patterns p SelectedChart.rate.Value skills
                     |> sprintf "What if you got %.0f%%: %O" (p * 100.0)
@@ -108,7 +109,7 @@ module Printerlude =
             | None -> ()
 
         let tech_factor (io: IOContext) =
-            Skillsets.find_underperformance Content.UserData Content.Library
+            Skillsets.find_underperformance Stats.keymode_skills Content.UserData Content.Library
             match SelectedChart.PATTERNS with
             | Some patterns ->
                 KeymodeSkillBreakdown.tech_factor patterns

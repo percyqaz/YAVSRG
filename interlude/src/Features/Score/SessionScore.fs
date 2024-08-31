@@ -8,6 +8,12 @@ open Interlude.UI
 type SessionScoreBar() =
     inherit StaticWidget(NodeType.None)
 
+    let value = Animation.Fade(0.0f, Target = 17272727f)
+
+    override this.Update(elapsed_ms, moved) =
+        base.Update(elapsed_ms, moved)
+        value.Update elapsed_ms
+
     override this.Draw() =
         // box
         Draw.rect (this.Bounds.Translate(10.0f, 10.0f)) Colors.black
@@ -27,5 +33,5 @@ type SessionScoreBar() =
         Background.drawq (counterq, (Color.FromArgb(40, 40, 40)), 2.0f)
         Draw.untextured_quad counterq (!*Palette.MAIN_100).AsQuad
 
-        Text.fill_b(Style.font, "7272727", counter, Colors.text, Alignment.CENTER)
-        Text.fill_b(Style.font, "Session score", counter.BorderB(40.0f).TranslateY(10.0f), Colors.text, Alignment.CENTER)
+        Text.fill_b(Style.font, sprintf "%.0f" value.Value, counter, Colors.text, Alignment.CENTER)
+        Text.fill_b(Style.font, "Session score", counter.TranslateX(-counter.Width - 20.0f), Colors.text, Alignment.CENTER)

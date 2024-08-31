@@ -84,11 +84,11 @@ type Skills() =
     inherit Container(NodeType.None)
 
     override this.Init(parent) =
-        Skillsets.calculate Content.UserData Content.Library
+        Skillsets.full_calculate Stats.keymode_skills Content.UserData Content.Library
         let available_keymodes =
             seq {
                 for i = 3 to 10 do
-                    if Skillsets.keymode_skills.[i - 3] <> KeymodeSkillBreakdown.Default then
+                    if Stats.keymode_skills.[i - 3] <> KeymodeSkillBreakdown.Default then
                         yield i
             }
             |> Array.ofSeq
@@ -98,10 +98,10 @@ type Skills() =
         let keymode = Setting.simple available_keymodes.[0]
         let skill = Setting.simple Jack
 
-        let graph_container = SwapContainer(SkillsetGraph.Create(Jack, Skillsets.keymode_skills.[keymode.Value - 3].Jack), Position = Position.Shrink(20.0f))
+        let graph_container = SwapContainer(SkillsetGraph.Create(Jack, Stats.keymode_skills.[keymode.Value - 3].Jack), Position = Position.Shrink(20.0f))
 
         let refresh_graph() =
-            let skills = Skillsets.keymode_skills.[keymode.Value - 3]
+            let skills = Stats.keymode_skills.[keymode.Value - 3]
             let skill_data = 
                 match skill.Value with
                 | Jack -> skills.Jack

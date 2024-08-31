@@ -5,9 +5,7 @@ open Prelude.Data.Library
 
 module Skillsets =
 
-    let keymode_skills = Array.init 8 (fun _ -> KeymodeSkillBreakdown.Default)
-
-    let calculate (score_db: UserDatabase) (library: Library) =
+    let full_calculate (keymode_skills: KeymodeSkillBreakdown array) (score_db: UserDatabase) (library: Library) =
 
         let sc_j4 = Rulesets.SC.create 4
         let sc_j4_id = Ruleset.hash sc_j4
@@ -22,7 +20,7 @@ module Skillsets =
                     KeymodeSkillBreakdown.score cc.Patterns.Patterns acc rate keymode_skills.[cc.Keys - 3] |> ignore
             | None -> ()
 
-    let find_underperformance (score_db: UserDatabase) (library: Library) =
+    let find_underperformance (keymode_skills: KeymodeSkillBreakdown array) (score_db: UserDatabase) (library: Library) =
 
         let sc_j4 = Rulesets.SC.create 4
         let sc_j4_id = Ruleset.hash sc_j4
