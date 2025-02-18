@@ -30,9 +30,10 @@ type ScoreCompareScreen(score_a: ScoreInfo, score_b: ScoreInfo) =
     override this.Init(parent) =
         this
         |+ TopBanner(score_a, Position = Position.SliceT(180.0f))
-        |+ Sidebar(
+        |+ ComparePanel(
             stats_a,
             score_a,
+            false,
             Position =
                 {
                     Left = 0.0f %+ 20.0f
@@ -41,9 +42,10 @@ type ScoreCompareScreen(score_a: ScoreInfo, score_b: ScoreInfo) =
                     Bottom = 1.0f %- 70.0f
                 }
         )
-        |+ Sidebar(
+        |+ ComparePanel(
             stats_b,
             score_b,
+            true,
             Position =
                 {
                     Left = 0.8f %- 0.0f

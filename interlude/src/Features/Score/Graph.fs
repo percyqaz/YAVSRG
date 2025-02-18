@@ -135,21 +135,11 @@ type ScoreGraph(score_info: ScoreInfo, stats: ScoreScreenStats ref, position: Sc
                 Bottom = 1.0f %- 65.0f
             }
         | CompareA ->
-            Position.DEFAULT.ShrinkPercentX(0.2f).SlicePercentT(0.5f).ShrinkT(25.0f).ShrinkB(65.0f),
-            {
-                Left = 0.0f %+ 20.0f
-                Top = -(1.0f / 0.35f - 1.0f) %+ 390.0f
-                Right = 1.0f %- 20.0f
-                Bottom = 1.0f %- 65.0f
-            }
+            Position.DEFAULT.ShrinkPercentX(0.2f).SlicePercentT(0.5f).ShrinkX(20.0f).ShrinkT(30.0f).ShrinkB(65.0f),
+            Position.DEFAULT.SlicePercentT(0.5f).ShrinkX(20.0f).ShrinkT(30.0f).ShrinkB(5.0f)
         | CompareB ->
-            Position.DEFAULT.ShrinkPercentX(0.2f).SlicePercentB(0.5f).ShrinkT(25.0f).ShrinkB(65.0f),
-            {
-                Left = 0.0f %+ 20.0f
-                Top = -(1.0f / 0.35f - 1.0f) %+ 390.0f
-                Right = 1.0f %- 20.0f
-                Bottom = 1.0f %- 65.0f
-            }
+            Position.DEFAULT.ShrinkPercentX(0.2f).SlicePercentB(0.5f).ShrinkX(20.0f).ShrinkT(30.0f).ShrinkB(65.0f),
+            Position.DEFAULT.SlicePercentB(0.5f).ShrinkX(20.0f).ShrinkT(30.0f).ShrinkB(5.0f)
 
     let duration = (score_info.WithMods.LastNote - score_info.WithMods.FirstNote) / score_info.Rate |> format_duration_ms
 
@@ -176,12 +166,20 @@ type ScoreGraph(score_info: ScoreInfo, stats: ScoreScreenStats ref, position: Sc
         Render.rect black_cutoff_area Colors.black.O2
 
         let white_line =
-            Rect.Create(
-                black_cutoff_area.Left,
-                bounds.Bottom,
-                black_cutoff_area.Left + Style.PADDING,
-                this.Bounds.Bottom
-            )
+            if bounds.Bottom < this.Bounds.Top then
+                Rect.Create(
+                    black_cutoff_area.Left,
+                    bounds.Bottom,
+                    black_cutoff_area.Left + Style.PADDING,
+                    this.Bounds.Bottom
+                )
+            else
+                Rect.Create(
+                    black_cutoff_area.Left,
+                    this.Bounds.Top,
+                    black_cutoff_area.Left + Style.PADDING,
+                    bounds.Top
+                )
         Render.rect white_line Colors.white.O1
 
         let outline_bounds = bounds.Expand(Style.PADDING)
@@ -604,12 +602,6 @@ type ScoreGraph(score_info: ScoreInfo, stats: ScoreScreenStats ref, position: Sc
                     GraphSettings.scale.Value <- GraphSettings.scale.Value + 0.25f * s
                     refresh <- true
 
-        for k = 0 to score_info.WithMods.Keys - 1 do
-            if GraphSettings.COLUMN_FILTER_KEYS.[k].Tapped() then
-                GraphSettings.column_filter.[k] <- not GraphSettings.column_filter.[k]
-                this.ApplyColumnFilter()
-                this.Refresh()
-
         if expanded && (%%"exit").Tapped() then
             expanded <- false
             this.Position <- NORMAL_POSITION
@@ -619,7 +611,13 @@ type ScoreGraph(score_info: ScoreInfo, stats: ScoreScreenStats ref, position: Sc
         if refresh then
             this.Redraw()
 
-        Render.border Style.PADDING this.Bounds Colors.white
+        let border_color =
+            match position with
+            | Normal -> Colors.white
+            | CompareA -> Colors.green_accent
+            | CompareB -> Colors.red_accent
+
+        Render.border Style.PADDING this.Bounds border_color
         Render.rect this.Bounds Colors.black.O3
         Render.sprite (Render.bounds()) Color.White fbo.Sprite
 
@@ -641,7 +639,7 @@ type ScoreGraph(score_info: ScoreInfo, stats: ScoreScreenStats ref, position: Sc
             let box =
                 Rect.Box(
                     this.Bounds.Left + percent * (this.Bounds.Width - BOX_WIDTH),
-                    this.Bounds.Top - BOX_HEIGHT - 20.0f,
+                    (if position = CompareA then this.Bounds.Bottom + 20.0f else this.Bounds.Top - BOX_HEIGHT - 20.0f),
                     BOX_WIDTH,
                     BOX_HEIGHT
                 )
