@@ -123,6 +123,8 @@
     <Compile Include="Features\Score\BottomBanner.fs" />
     <Compile Include="Features\Score\Confetti.fs" />
     <Compile Include="Features\Score\Score.fs" />
+    <Compile Include="Features\Score\Compare\CompareBanner.fs" />
+    <Compile Include="Features\Score\Compare\CompareResults.fs" />
     <Compile Include="Features\Score\Compare\ComparePanel.fs" />
     <Compile Include="Features\Score\Compare\CompareGraphs.fs" />
     <Compile Include="Features\Score\Compare\Compare.fs" />

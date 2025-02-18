@@ -2,7 +2,6 @@
 
 open Percyqaz.Flux.Windowing
 open Percyqaz.Flux.UI
-open Percyqaz.Flux.Graphics
 open Prelude.Gameplay.Scoring
 open Prelude.Data.User
 open Interlude.Content
@@ -29,30 +28,62 @@ type ScoreCompareScreen(score_a: ScoreInfo, score_b: ScoreInfo) =
 
     override this.Init(parent) =
         this
-        |+ TopBanner(score_a, Position = Position.SliceT(180.0f))
+        |+ CompareBanner(score_a, score_b, Position = Position.SliceT(180.0f))
         |+ ComparePanel(
             stats_a,
             score_a,
             false,
             Position =
-                {
-                    Left = 0.0f %+ 20.0f
-                    Top = 0.0f %+ 215.0f
-                    Right = 0.2f %- 0.0f
-                    Bottom = 1.0f %- 70.0f
-                }
+                Position
+                    .SlicePercentL(0.2f)
+                    .ShrinkL(20.0f)
+                    .ShrinkT(215.0f)
+                    .ShrinkB(260.0f)
+        )
+        |+ CompareLamp(
+            score_a,
+            Position =
+                Position
+                    .SlicePercentL(0.2f)
+                    .ShrinkL(20.0f)
+                    .SliceB(140.0f, 100.0f)
+        )
+        |+ CompareAccuracy(
+            stats_a,
+            score_a,
+            Position =
+                Position
+                    .SlicePercentL(0.2f)
+                    .ShrinkL(20.0f)
+                    .SliceB(20.0f, 100.0f)
         )
         |+ ComparePanel(
             stats_b,
             score_b,
             true,
             Position =
-                {
-                    Left = 0.8f %- 0.0f
-                    Top = 0.0f %+ 215.0f
-                    Right = 1.0f %- 20.0f
-                    Bottom = 1.0f %- 70.0f
-                }
+                Position
+                    .SlicePercentR(0.2f)
+                    .ShrinkR(20.0f)
+                    .ShrinkT(215.0f)
+                    .ShrinkB(260.0f)
+        )
+        |+ CompareLamp(
+            score_b,
+            Position =
+                Position
+                    .SlicePercentR(0.2f)
+                    .ShrinkR(20.0f)
+                    .SliceB(140.0f, 100.0f)
+        )
+        |+ CompareAccuracy(
+            stats_b,
+            score_b,
+            Position =
+                Position
+                    .SlicePercentR(0.2f)
+                    .ShrinkR(20.0f)
+                    .SliceB(20.0f, 100.0f)
         )
         |+ CompareGraphs(
             score_a,
@@ -69,13 +100,9 @@ type ScoreCompareScreen(score_a: ScoreInfo, score_b: ScoreInfo) =
 
         base.Init parent
 
-    override this.Update(elapsed_ms, moved) =
-        ScoreScreenHelpers.animation_queue.Update elapsed_ms
-        base.Update(elapsed_ms, moved)
-
     override this.OnEnter prev =
         Toolbar.hide ()
-        DiscordRPC.in_menus ("Comparing two scores")
+        DiscordRPC.in_menus "Comparing two scores"
 
     override this.OnExit next =
         score_a.Ruleset <- Rulesets.current
@@ -86,14 +113,4 @@ type ScoreCompareScreen(score_a: ScoreInfo, score_b: ScoreInfo) =
         Toolbar.show ()
 
     override this.OnBack() =
-        if Network.lobby.IsSome then
-            Some Screen.Type.Lobby
-        else
-            Some Screen.Type.LevelSelect
-
-    override this.Draw() =
-
-        Render.rect (this.Bounds.ShrinkT(175.0f).SliceT(160.0f).ShrinkT(5.0f)) Colors.shadow_2.O2
-        Render.rect (this.Bounds.ShrinkT(175.0f).ShrinkT(160.0f).SliceT(5.0f)) Colors.white
-
-        base.Draw()
+        if Network.lobby.IsSome then Some Screen.Type.Lobby else Some Screen.Type.LevelSelect

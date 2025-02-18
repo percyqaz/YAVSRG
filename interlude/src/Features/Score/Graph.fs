@@ -136,10 +136,10 @@ type ScoreGraph(score_info: ScoreInfo, stats: ScoreScreenStats ref, position: Sc
             }
         | CompareA ->
             Position.DEFAULT.ShrinkPercentX(0.2f).SlicePercentT(0.5f).ShrinkX(20.0f).ShrinkT(30.0f).ShrinkB(65.0f),
-            Position.DEFAULT.SlicePercentT(0.5f).ShrinkX(20.0f).ShrinkT(30.0f).ShrinkB(5.0f)
+            Position.DEFAULT.SlicePercentT(0.5f).ShrinkX(20.0f).ShrinkT(30.0f).ShrinkB(25.0f)
         | CompareB ->
             Position.DEFAULT.ShrinkPercentX(0.2f).SlicePercentB(0.5f).ShrinkX(20.0f).ShrinkT(30.0f).ShrinkB(65.0f),
-            Position.DEFAULT.SlicePercentB(0.5f).ShrinkX(20.0f).ShrinkT(30.0f).ShrinkB(5.0f)
+            Position.DEFAULT.SlicePercentB(0.5f).ShrinkX(20.0f).ExpandT(10.0f).ShrinkB(65.0f)
 
     let duration = (score_info.WithMods.LastNote - score_info.WithMods.FirstNote) / score_info.Rate |> format_duration_ms
 

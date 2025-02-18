@@ -38,42 +38,42 @@ type ComparePanel(stats: ScoreScreenStats ref, score_info: ScoreInfo, is_score_b
         //    Position = Position.ShrinkT(530.0f).SliceT(70.0f).ShrinkX(25.0f),
         //    Align = Alignment.CENTER
         //)
-        |+ Text(
+        |* Text(
             sprintf "%.2f" score_info.Physical,
             Position = Position.ShrinkT(530.0f).SliceT(70.0f).ShrinkX(25.0f),
             Align = Alignment.RIGHT
         )
 
-        |+ Text(
-            (fun () -> sprintf "MA: %s  •  PA: %s" (!stats).MA (!stats).PA),
-            Position = Position.ShrinkT(600.0f).SliceT(40.0f).ShrinkX(25.0f),
-            Align = Alignment.CENTER,
-            Color = fun () -> if (!stats).ColumnFilterApplied then Colors.text_green else Colors.text
-        )
-        |+ Text(
-            (fun () -> sprintf "Taps ~ M: %.2fms  •  SD: %.2fms" (!stats).TapMean (!stats).TapStandardDeviation),
-            Position = Position.ShrinkT(640.0f).SliceT(40.0f).ShrinkX(25.0f),
-            Align = Alignment.CENTER,
-            Color = fun () -> if (!stats).ColumnFilterApplied then Colors.text_green else Colors.text
-        )
-        |+ Text(
-            (fun () -> sprintf "%.1fms earliest  •  +%.1fms latest  •  %.1f%% early" (fst (!stats).TapRange) (snd (!stats).TapRange) (100.0 * (!stats).TapEarlyPercent)),
-            Position = Position.ShrinkT(675.0f).SliceT(40.0f).ShrinkX(25.0f),
-            Align = Alignment.CENTER,
-            Color = fun () -> if (!stats).ColumnFilterApplied then Colors.text_green else Colors.text_subheading
-        )
-        |+ Text(
-            (fun () -> sprintf "Releases ~ M: %.2fms  •  SD: %.2fms" (!stats).ReleaseMean (!stats).ReleaseStandardDeviation),
-            Position = Position.ShrinkT(715.0f).SliceT(40.0f).ShrinkX(25.0f),
-            Align = Alignment.CENTER,
-            Color = fun () -> if (!stats).ColumnFilterApplied then Colors.text_green else Colors.text
-        )
-        |* Text(
-            (fun () -> sprintf "%.1fms earliest  •  +%.1fms latest  •  %.1f%% early" (fst (!stats).ReleaseRange) (snd (!stats).ReleaseRange) (100.0 * (!stats).ReleaseEarlyPercent)),
-            Position = Position.ShrinkT(750.0f).SliceT(40.0f).ShrinkX(25.0f),
-            Align = Alignment.CENTER,
-            Color = fun () -> if (!stats).ColumnFilterApplied then Colors.text_green else Colors.text_subheading
-        )
+        //|+ Text(
+        //    (fun () -> sprintf "MA: %s  •  PA: %s" (!stats).MA (!stats).PA),
+        //    Position = Position.ShrinkT(600.0f).SliceT(40.0f).ShrinkX(25.0f),
+        //    Align = Alignment.CENTER,
+        //    Color = fun () -> if (!stats).ColumnFilterApplied then Colors.text_green else Colors.text
+        //)
+        //|+ Text(
+        //    (fun () -> sprintf "Taps ~ M: %.2fms  •  SD: %.2fms" (!stats).TapMean (!stats).TapStandardDeviation),
+        //    Position = Position.ShrinkT(640.0f).SliceT(40.0f).ShrinkX(25.0f),
+        //    Align = Alignment.CENTER,
+        //    Color = fun () -> if (!stats).ColumnFilterApplied then Colors.text_green else Colors.text
+        //)
+        //|+ Text(
+        //    (fun () -> sprintf "%.1fms earliest  •  +%.1fms latest  •  %.1f%% early" (fst (!stats).TapRange) (snd (!stats).TapRange) (100.0 * (!stats).TapEarlyPercent)),
+        //    Position = Position.ShrinkT(675.0f).SliceT(40.0f).ShrinkX(25.0f),
+        //    Align = Alignment.CENTER,
+        //    Color = fun () -> if (!stats).ColumnFilterApplied then Colors.text_green else Colors.text_subheading
+        //)
+        //|+ Text(
+        //    (fun () -> sprintf "Releases ~ M: %.2fms  •  SD: %.2fms" (!stats).ReleaseMean (!stats).ReleaseStandardDeviation),
+        //    Position = Position.ShrinkT(715.0f).SliceT(40.0f).ShrinkX(25.0f),
+        //    Align = Alignment.CENTER,
+        //    Color = fun () -> if (!stats).ColumnFilterApplied then Colors.text_green else Colors.text
+        //)
+        //|* Text(
+        //    (fun () -> sprintf "%.1fms earliest  •  +%.1fms latest  •  %.1f%% early" (fst (!stats).ReleaseRange) (snd (!stats).ReleaseRange) (100.0 * (!stats).ReleaseEarlyPercent)),
+        //    Position = Position.ShrinkT(750.0f).SliceT(40.0f).ShrinkX(25.0f),
+        //    Align = Alignment.CENTER,
+        //    Color = fun () -> if (!stats).ColumnFilterApplied then Colors.text_green else Colors.text_subheading
+        //)
 
         base.Init(parent)
 
