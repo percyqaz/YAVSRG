@@ -1040,6 +1040,7 @@ rulesets.tooltip=Different rulesets can simulate how other games would score you
 score.challenge=Challenge this score
 score.challenge.tooltip=Play the chart, using this score as a pacemaker.
 score.chart_actions=Chart actions
+score.compare=Compare
 score.compare_accuracy=%0 from record: %1
 score.continue=Continue
 score.creator=Charted by %0

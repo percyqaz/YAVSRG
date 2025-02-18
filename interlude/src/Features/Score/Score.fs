@@ -38,7 +38,7 @@ type ScoreScreen(score_info: ScoreInfo, results: ImprovementFlags * SessionXPGai
         | _ -> None
         |> ref
 
-    let graph = new ScoreGraph(score_info, stats)
+    let graph = new ScoreGraph(score_info, stats, Normal)
 
     let refresh () =
         personal_bests := ImprovementFlags.None

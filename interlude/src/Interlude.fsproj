@@ -123,6 +123,7 @@
     <Compile Include="Features\Score\BottomBanner.fs" />
     <Compile Include="Features\Score\Confetti.fs" />
     <Compile Include="Features\Score\Score.fs" />
+    <Compile Include="Features\Score\Compare\Compare.fs" />
     <Compile Include="Features\Import\TaskTracking.fs" />
     <Compile Include="Features\Import\osu!\Skins.fs" />
     <Compile Include="Features\Import\osu!\Replays.fs" />
@@ -232,6 +233,8 @@
     <Compile Include="Features\Skins\Browser\Browser.fs" />
     <Compile Include="Features\Skins\Select.fs" />
     <Compile Include="Features\LevelSelect\Shared.fs" />
+    <Compile Include="Features\LevelSelect\LocalScores.fs" />
+    <Compile Include="Features\LevelSelect\OnlineScores.fs" />
     <Compile Include="Features\LevelSelect\Filters.fs" />
     <Compile Include="Features\LevelSelect\LevelSelectOptions.fs" />
     <Compile Include="Features\LevelSelect\LibraryView.fs" />
@@ -247,10 +250,8 @@
     <Compile Include="Features\LevelSelect\Preview.fs" />
     <Compile Include="Features\LevelSelect\ModSelect.fs" />
     <Compile Include="Features\LevelSelect\Scoreboard\Score.fs" />
-    <Compile Include="Features\LevelSelect\Scoreboard\LocalScores.fs" />
     <Compile Include="Features\LevelSelect\Scoreboard\Scoreboard.fs" />
     <Compile Include="Features\LevelSelect\Leaderboard\Score.fs" />
-    <Compile Include="Features\LevelSelect\Leaderboard\OnlineScores.fs" />
     <Compile Include="Features\LevelSelect\Leaderboard\Leaderboard.fs" />
     <Compile Include="Features\LevelSelect\Info\CurrentChart.fs" />
     <Compile Include="Features\LevelSelect\Info\GameplayInfoBoxes.fs" />

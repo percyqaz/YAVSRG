@@ -10,6 +10,28 @@ open Interlude.Content
 open Interlude.UI
 open Interlude.Features.Gameplay
 open Interlude.Features.Online
+open Interlude.Features.Score
+
+type ScoreCompareMenu(score_info: ScoreInfo) =
+    inherit Page()
+
+    let compare (score_b: ScoreInfo) =
+        if Screen.change_new (fun () -> ScoreCompareScreen(score_info, score_b)) Screen.Type.Score Transitions.EnterGameplayNoFadeAudio then
+            Menu.Exit()
+
+    override this.Content() =
+        let flow = FlowContainer.Vertical(PRETTYHEIGHT)
+
+        for score in LocalScores.local_scores do
+            if score.TimePlayed <> score_info.TimePlayed then
+                flow.Add(PageButton(score.Scoring.FormattedAccuracy, fun () -> compare score))
+
+        page_container()
+        |+ ScrollContainer(flow)
+        :> Widget
+
+    override this.OnClose() = ()
+    override this.Title = "Compare score to ..."
 
 type ScoreContextMenu(is_leaderboard: bool, score_info: ScoreInfo) =
     inherit Page()
@@ -37,12 +59,19 @@ type ScoreContextMenu(is_leaderboard: bool, score_info: ScoreInfo) =
             .Help(Help.Info("score.challenge"))
             .Pos(2)
         |+ PageButton(
+            %"score.compare",
+            (fun () -> ScoreCompareMenu(score_info).Show()),
+            Icon = Icons.BAR_CHART_LINE,
+            Disabled = K Network.lobby.IsSome
+        )
+            .Pos(4)
+        |+ PageButton(
             %"score.delete",
             (fun () -> ScoreContextMenu.ConfirmDeleteScore(score_info, true)),
             Icon = Icons.TRASH,
             Hotkey = %%"delete"
         )
-            .Pos(4)
+            .Pos(6)
             .Conditional(K (not is_leaderboard))
         :> Widget
 

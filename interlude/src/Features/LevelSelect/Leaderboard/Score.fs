@@ -7,9 +7,6 @@ open Prelude
 open Prelude.Data.User
 open Interlude.UI
 open Interlude.Features.Score
-open Interlude.Web.Shared.Requests
-
-type LeaderboardScore = Charts.Scores.Leaderboard.Score
 
 type private LeaderboardCard(score: LeaderboardScore, score_info: ScoreInfo) =
     inherit
@@ -135,7 +132,7 @@ type private LeaderboardCard(score: LeaderboardScore, score_info: ScoreInfo) =
                 LevelSelect.choose_this_chart()
             else
                 Screen.change_new
-                        (fun () -> new ScoreScreen(score_info, (ImprovementFlags.None, None), false) :> Screen)
-                        ScreenType.Score
-                        Transitions.EnterGameplayNoFadeAudio
-                    |> ignore
+                    (fun () -> new ScoreScreen(score_info, (ImprovementFlags.None, None), false) :> Screen)
+                    ScreenType.Score
+                    Transitions.EnterGameplayNoFadeAudio
+                |> ignore

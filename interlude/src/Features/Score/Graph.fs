@@ -33,12 +33,12 @@ module GraphSettings =
         |]
         |> Array.map Bind.mk
 
-type ScoreGraphSettingsPage(graph: ScoreGraph) =
+type ScoreGraphSettingsPage(keys: int, on_close: bool -> unit) =
     inherit Page()
 
     let mutable column_filter_changed = false
     let column_filter_setting k = Setting.make (fun v -> column_filter_changed <- true; GraphSettings.column_filter.[k] <- v) (fun () -> GraphSettings.column_filter.[k])
-    let column_filter_ui, _ = refreshable_row (fun () -> graph.Keys) (fun k _ -> Checkbox(column_filter_setting k, Position = Position.SliceL(50.0f).Translate(float32 k * 80.0f, 0.0f)))
+    let column_filter_ui, _ = refreshable_row (fun () -> keys) (fun k _ -> Checkbox(column_filter_setting k, Position = Position.SliceL(50.0f).Translate(float32 k * 80.0f, 0.0f)))
 
     override this.Content() =
         page_container()
@@ -97,11 +97,14 @@ type ScoreGraphSettingsPage(graph: ScoreGraph) =
         :> Widget
 
     override this.Title = %"score.graph.settings"
-    override this.OnClose() =
-        if column_filter_changed then graph.ApplyColumnFilter()
-        graph.Refresh()
+    override this.OnClose() = on_close column_filter_changed
 
-and ScoreGraph(score_info: ScoreInfo, stats: ScoreScreenStats ref) =
+type ScoreGraphPosition =
+    | Normal
+    | CompareA
+    | CompareB
+
+type ScoreGraph(score_info: ScoreInfo, stats: ScoreScreenStats ref, position: ScoreGraphPosition) =
     inherit StaticWidget(NodeType.None)
 
     let fbo = Render.borrow_fbo()
@@ -116,21 +119,37 @@ and ScoreGraph(score_info: ScoreInfo, stats: ScoreScreenStats ref) =
     let BOX_HEIGHT = 250.0f
     let BOX_WIDTH = 400.0f
 
-    let NORMAL_POSITION =
-        {
-            Left = 0.35f %+ 30.0f
-            Top = 0.0f %+ 25.0f
-            Right = 1.0f %- 20.0f
-            Bottom = 1.0f %- 65.0f
-        }
-
-    let EXPANDED_POSITION =
-        {
-            Left = 0.0f %+ 20.0f
-            Top = -(1.0f / 0.35f - 1.0f) %+ 390.0f
-            Right = 1.0f %- 20.0f
-            Bottom = 1.0f %- 65.0f
-        }
+    let NORMAL_POSITION, EXPANDED_POSITION =
+        match position with
+        | Normal ->
+            {
+                Left = 0.35f %+ 30.0f
+                Top = 0.0f %+ 25.0f
+                Right = 1.0f %- 20.0f
+                Bottom = 1.0f %- 65.0f
+            },
+            {
+                Left = 0.0f %+ 20.0f
+                Top = -(1.0f / 0.35f - 1.0f) %+ 390.0f
+                Right = 1.0f %- 20.0f
+                Bottom = 1.0f %- 65.0f
+            }
+        | CompareA ->
+            Position.DEFAULT.ShrinkPercentX(0.2f).SlicePercentT(0.5f).ShrinkT(25.0f).ShrinkB(65.0f),
+            {
+                Left = 0.0f %+ 20.0f
+                Top = -(1.0f / 0.35f - 1.0f) %+ 390.0f
+                Right = 1.0f %- 20.0f
+                Bottom = 1.0f %- 65.0f
+            }
+        | CompareB ->
+            Position.DEFAULT.ShrinkPercentX(0.2f).SlicePercentB(0.5f).ShrinkT(25.0f).ShrinkB(65.0f),
+            {
+                Left = 0.0f %+ 20.0f
+                Top = -(1.0f / 0.35f - 1.0f) %+ 390.0f
+                Right = 1.0f %- 20.0f
+                Bottom = 1.0f %- 65.0f
+            }
 
     let duration = (score_info.WithMods.LastNote - score_info.WithMods.FirstNote) / score_info.Rate |> format_duration_ms
 
@@ -143,6 +162,8 @@ and ScoreGraph(score_info: ScoreInfo, stats: ScoreScreenStats ref) =
         base.Init parent
 
     member this.Refresh() = refresh <- true
+
+    member val OnRightClick = ignore with get, set
 
     member this.ApplyColumnFilter() =
         stats.Value <- ScoreScreenStats.calculate score_info.Scoring GraphSettings.column_filter
@@ -567,7 +588,7 @@ and ScoreGraph(score_info: ScoreInfo, stats: ScoreScreenStats ref) =
 
         if Mouse.hover this.Bounds then
             if Mouse.right_click() then
-                ScoreGraphSettingsPage(this).Show()
+                this.OnRightClick()
             elif Mouse.left_click() then
                 expanded <- not expanded
                 this.Position <- if expanded then EXPANDED_POSITION else NORMAL_POSITION
