@@ -13,7 +13,7 @@ open Interlude.UI
 type ComparePanel(stats: ScoreScreenStats ref, score_info: ScoreInfo, is_score_b: bool) =
     inherit Container(NodeType.None)
 
-    let mod_string = ModState.format (score_info.Rate, score_info.Mods, false)
+    let mod_string = ModState.format (score_info.Rate, score_info.Mods)
 
     override this.Init(parent) =
         this

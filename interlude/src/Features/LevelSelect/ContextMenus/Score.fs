@@ -16,11 +16,11 @@ type ScoreCompareMenu(score_info: ScoreInfo) =
     inherit Page()
 
     let compare (score_b: ScoreInfo) =
-        if Screen.change_new (fun () -> ScoreCompareScreen(score_info, score_b)) Screen.Type.Score Transitions.EnterGameplayNoFadeAudio then
+        if Screen.change_new (fun () -> ScoreCompareScreen(score_info, score_b)) ScreenType.Score Transitions.EnterGameplayNoFadeAudio then
             Menu.Exit()
 
     override this.Content() =
-        let flow = FlowContainer.Vertical(PRETTYHEIGHT)
+        let flow = FlowContainer.Vertical(PAGE_ITEM_HEIGHT)
 
         for score in LocalScores.local_scores do
             if score.TimePlayed <> score_info.TimePlayed then

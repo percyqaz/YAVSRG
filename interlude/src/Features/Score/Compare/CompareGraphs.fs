@@ -50,6 +50,10 @@ type CompareGraphs(score_a: ScoreInfo, score_b: ScoreInfo, graph_a: ScoreGraph, 
                     score_b.Ruleset <- ruleset
                     refresh ()
                 ),
+                (fun ruleset ->
+                    score_a.Ruleset <- ruleset
+                    score_b.Ruleset <- ruleset
+                    refresh()),
                 score_a
             )
         )

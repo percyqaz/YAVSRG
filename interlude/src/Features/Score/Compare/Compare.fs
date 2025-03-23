@@ -113,4 +113,4 @@ type ScoreCompareScreen(score_a: ScoreInfo, score_b: ScoreInfo) =
         Toolbar.show ()
 
     override this.OnBack() =
-        if Network.lobby.IsSome then Some Screen.Type.Lobby else Some Screen.Type.LevelSelect
+        if Network.lobby.IsSome then Some ScreenType.Lobby else Some ScreenType.LevelSelect
