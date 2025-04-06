@@ -8,8 +8,7 @@ type FoundPattern<'D> =
         Pattern: CorePattern
         SpecificType: string option
         Mixed: bool
-        Start: Time
-        End: Time
+        Time: Time
         MsPerBeat: float32<ms/beat>
         Variety: float32
         Strains: 'D array
@@ -42,8 +41,7 @@ module internal Patterns =
                     Pattern = Stream
                     SpecificType = specific_type
                     Mixed = d |> List.forall (fun d -> abs(d.MsPerBeat - mean_mspb) < PATTERN_STABILITY_THRESHOLD) |> not
-                    Start = remaining_data.Head.Time
-                    End = remaining_data |> List.skip n |> List.tryHead |> function None -> last_note | Some r -> r.Time
+                    Time = remaining_data.Head.Time
                     MsPerBeat = mean_mspb
                     Variety = d |> List.averageBy _.Variety
                     Strains = remaining_data.Head.Strains
@@ -66,8 +64,7 @@ module internal Patterns =
                     Pattern = Chordstream
                     SpecificType = specific_type
                     Mixed = d |> List.forall (fun d -> abs(d.MsPerBeat - mean_mspb) < PATTERN_STABILITY_THRESHOLD) |> not
-                    Start = remaining_data.Head.Time
-                    End = remaining_data |> List.skip n |> List.tryHead |> function None -> last_note | Some r -> r.Time
+                    Time = remaining_data.Head.Time
                     MsPerBeat = mean_mspb
                     Variety = d |> List.averageBy _.Variety
                     Strains = remaining_data.Head.Strains
@@ -90,11 +87,7 @@ module internal Patterns =
                     Pattern = Jacks
                     SpecificType = specific_type
                     Mixed = d |> List.forall (fun d -> abs(d.MsPerBeat - mean_mspb) < PATTERN_STABILITY_THRESHOLD) |> not
-                    Start = remaining_data.Head.Time
-                    End =
-                        max
-                            (remaining_data.Head.Time + remaining_data.Head.MsPerBeat * 0.5f<beat>)
-                            (remaining_data |> List.skip n |> List.tryHead |> function None -> last_note | Some r -> r.Time)
+                    Time = remaining_data.Head.Time
                     MsPerBeat = mean_mspb
                     Variety = d |> List.averageBy _.Variety
                     Strains = remaining_data.Head.Strains
