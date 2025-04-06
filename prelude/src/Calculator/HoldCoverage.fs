@@ -52,7 +52,7 @@ module HoldCoverage =
                             start <- max start notes.[j].Time |> min (time + window)
                             in_hold <- true
                         elif notes.[j].Data.[k] = NoteType.HOLDTAIL then
-                            output.[i] <- output.[i] + float32 (notes.[j].Time - shorten - start)
+                            output.[i] <- output.[i] + float32 (notes.[j].Time - shorten - start |> max 0.0f<ms>)
                             in_hold <- false
                     if in_hold then
                         output.[i] <- output.[i] + float32 (time + window - start)

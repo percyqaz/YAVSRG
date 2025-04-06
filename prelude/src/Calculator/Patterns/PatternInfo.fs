@@ -30,20 +30,6 @@ type PatternCluster =
             Density = cluster.Density
         }
 
-    member this.Format (rate: Rate) =
-
-        let name =
-            match this.SpecificPatterns with
-            | (t, amount) :: _ when amount > 0.4f -> t
-            | _ -> this.Pattern.ToString()
-
-        match this.Type with
-        | ClusterType.Normal bpm ->
-            sprintf "%.0fBPM %s" (float32 bpm * rate) name
-        | ClusterType.Mixed bpm ->
-            sprintf "~%.0fBPM Mixed %s" (float32 bpm * rate) name
-        | ClusterType.Combined -> name
-
 /// Calculated dynamically for a specific chart + rate
 /// Can have more details compared to the LibraryPatternInfo which is precalculated and stored for every chart
 type PatternInfo =
@@ -67,21 +53,9 @@ module PatternInfo =
 
         let clusters =
             Clustering.get_clusters_rate patterns
-            |> Array.filter (fun c -> not c.ShouldIgnore)
-
-        let three_most_important =
-            clusters
-            |> Seq.sortByDescending (fun c -> c.Importance)
-            |> Seq.truncate 3
-
-        let three_hardest =
-            clusters
-            |> Seq.sortByDescending (fun c -> c.Rating)
-            |> Seq.truncate 3
 
         let main_clusters =
-            Seq.concat [three_most_important; three_hardest]
-            |> Seq.distinct
+            Clustering.most_important(75<_>, clusters)
             |> Seq.map PatternCluster.OfCluster
             |> Seq.toArray
 

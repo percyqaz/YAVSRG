@@ -51,7 +51,7 @@ module PatternReport =
         let patterns = Patterns.find_rate (chart, 1.0f<rate>)
         let clusters =
             Clustering.get_clusters_rate patterns
-            |> Seq.filter (fun c -> not c.ShouldIgnore)
+            |> Seq.filter (fun c -> c.BPM > 25<_>)
             |> Seq.sortByDescending (fun x -> x.Amount)
             |> Array.ofSeq
 
