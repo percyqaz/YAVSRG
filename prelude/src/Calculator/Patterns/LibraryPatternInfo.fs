@@ -93,13 +93,6 @@ type LibraryPatternInfo =
         HoldNotePercent: float32
         Purity: float32
         Simplicity: float32
-
-        // have to stay for now for combined ratings - prepare to be destroyed!
-        Density10: Density
-        Density25: Density
-        Density50: Density
-        Density75: Density
-        Density90: Density
     }
 
     member this.Write (bw: BinaryWriter) : unit =
@@ -115,9 +108,3 @@ type LibraryPatternInfo =
         bw.Write (float32 this.HoldNotePercent)
         bw.Write this.Purity
         bw.Write this.Simplicity
-
-        bw.Write (float32 this.Density10)
-        bw.Write (float32 this.Density25)
-        bw.Write (float32 this.Density50)
-        bw.Write (float32 this.Density75)
-        bw.Write (float32 this.Density90)

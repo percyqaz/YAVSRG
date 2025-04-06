@@ -12,12 +12,12 @@ open Interlude.Features.Gameplay
 type Patterns(display: Setting<InfoPanelMode>) =
     inherit Container(NodeType.None)
 
-    let mutable patterns: Cluster<float32> array = [||]
+    let mutable patterns: PatternCluster array = [||]
     let mutable category: string = ""
 
     let on_chart_update(info: LoadedChartInfo) =
-        patterns <- info.Patterns.Clusters |> Array.truncate 6
-        category <- info.Patterns.Category
+        patterns <- info.Patterns.MainPatterns |> Array.truncate 6
+        category <- "nyi"//info.Patterns.Category
 
     override this.Init(parent: Widget) =
         base.Init parent
@@ -40,12 +40,9 @@ type Patterns(display: Setting<InfoPanelMode>) =
         base.Draw()
 
         let mutable b =
-            this.Bounds.SliceT(60.0f).Shrink(20.0f, 0.0f).Translate(0.0f, 60.0f)
+            this.Bounds.SliceT(60.0f, 65.0f).ShrinkX(20.0f)
 
-        let TEXT_WIDTH = 240.0f
-        let BAR_L = b.Left + TEXT_WIDTH + 5.0f
-        let BAR_R = b.Right - 5.0f
-        let BAR_WIDTH = BAR_R - BAR_L
+        let TEXT_WIDTH = 360.0f
 
         for entry in patterns do
             Text.fill_b (
@@ -58,13 +55,7 @@ type Patterns(display: Setting<InfoPanelMode>) =
 
             Text.fill_b (
                 Style.font,
-                (
-                    entry.Format SelectedChart.rate.Value
-                    //if entry.Mixed then
-                    //    sprintf "~%.0f BPM / %.2f*" (float32 entry.BPM * SelectedChart.rate.Value) entry.Rating
-                    //else
-                    //    sprintf "%.0f BPM / %.2f*" (float32 entry.BPM * SelectedChart.rate.Value) entry.Rating
-                ),
+                String.concat ", " (entry.SpecificPatterns |> Seq.truncate 2 |> Seq.map (fun (p, amount) -> sprintf "%.0f%% %s" (amount * 100.0f) p)),
                 b.SliceB(30.0f).SliceL(TEXT_WIDTH),
                 Colors.text_subheading,
                 Alignment.LEFT
@@ -72,33 +63,26 @@ type Patterns(display: Setting<InfoPanelMode>) =
 
             Text.fill_b (
                 Style.font,
-                String.concat ", " (entry.SpecificTypes |> Seq.truncate 3 |> Seq.map (fun (p, amount) -> sprintf "%.0f%% %s" (amount * 100.0f) p)),
-                b.SliceB(30.0f).ShrinkL(TEXT_WIDTH),
-                Colors.text_subheading,
+                Icons.MUSIC + " " + (match entry.Type with ClusterType.Normal bpm -> sprintf "%i" bpm | ClusterType.Mixed bpm -> sprintf "~%i" bpm | ClusterType.Combined -> "?"),
+                b.ShrinkL(TEXT_WIDTH).ShrinkY(10.0f),
+                Colors.text,
                 Alignment.LEFT
             )
 
-            Render.rect (b.SliceL(5.0f).SliceT(20.0f).Translate(TEXT_WIDTH, 10.0f)) Colors.white
-            Render.rect (b.SliceR(5.0f).SliceT(20.0f).Translate(0.0f, 10.0f)) Colors.white
+            Text.fill_b (
+                Style.font,
+                Icons.STAR + " " + (sprintf "%.2f" entry.Rating),
+                b.ShrinkL(TEXT_WIDTH).ShrinkY(10.0f),
+                Colors.text,
+                Alignment.CENTER
+            )
 
-            let density_color (nps: float32</rate>) =
-                nps * 2.0f * SelectedChart.rate.Value |> Difficulty.color
+            Text.fill_b (
+                Style.font,
+                Icons.CLOCK + " " + (format_duration_ms (entry.Amount / SelectedChart.rate.Value)),
+                b.ShrinkL(TEXT_WIDTH).ShrinkY(10.0f),
+                Colors.text,
+                Alignment.RIGHT
+            )
 
-            let bar_scale = min 1.0f (entry.Amount / 1000.0f<ms / rate> / SelectedChart.rate.Value / 100.0f)
-
-            let bar (lo_pc, lo_val, hi_pc, hi_val) =
-                Render.rect_edges_c
-                    (BAR_L + lo_pc * BAR_WIDTH * bar_scale)
-                    (b.Top + 12.5f)
-                    (BAR_L + hi_pc * BAR_WIDTH * bar_scale)
-                    (b.Top + 27.5f)
-                    (Quad.gradient_left_to_right (density_color lo_val) (density_color hi_val))
-
-            //bar (0.0f, entry.Density10, 0.1f, entry.Density10)
-            //bar (0.1f, entry.Density10, 0.25f, entry.Density25)
-            //bar (0.25f, entry.Density25, 0.5f, entry.Density50)
-            //bar (0.5f, entry.Density50, 0.75f, entry.Density75)
-            //bar (0.75f, entry.Density75, 0.9f, entry.Density90)
-            //bar (0.9f, entry.Density90, 1.0f, entry.Density90)
-
-            b <- b.Translate(0.0f, 60.0f)
+            b <- b.Translate(0.0f, 65.0f)
