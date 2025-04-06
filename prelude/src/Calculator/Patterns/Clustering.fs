@@ -74,6 +74,7 @@ type Cluster<'D> =
 
         Rating: 'D
 
+        HoldCoverage: Percentiles<float32>
         Variety: Percentiles<float32>
         Density: Percentiles<Density>
 
@@ -97,6 +98,7 @@ type Cluster<'D> =
 
             Rating = 0.0f
 
+            HoldCoverage = Percentiles.zero(0.0f)
             Variety = Percentiles.zero(0.0f)
             Density = Percentiles.zero(0.0f</rate>)
 
@@ -212,6 +214,7 @@ module private Clustering =
             let starts_ends = data |> Array.map (fun (m, _) -> m.Start, m.End)
             let densities = data |> Array.map (fst >> _.Density) |> Array.sort
             let varieties = data |> Array.map (fst >> _.Variety) |> Array.sort
+            let hold_coverages = data |> Array.map (fst >> _.HoldCoverage) |> Array.sort
 
             let data_count = float32 data.Length
             let specific_types =
@@ -229,6 +232,7 @@ module private Clustering =
 
                 Rating = data |> Seq.map (fst >> _.Strains) |> Seq.concat |> rate_difficulty
 
+                HoldCoverage = Percentiles.create hold_coverages
                 Variety = Percentiles.create varieties
                 Density = Percentiles.create densities
 
@@ -247,6 +251,7 @@ module private Clustering =
         let starts_ends = data |> Array.map (fun (m, _) -> m.Start, m.End)
         let densities = data |> Array.map (fst >> _.Density) |> Array.sort
         let varieties = data |> Array.map (fst >> _.Variety) |> Array.sort
+        let hold_coverages = data |> Array.map (fst >> _.HoldCoverage) |> Array.sort
 
         let data_count = float32 data.Length
         let specific_types =
@@ -264,6 +269,7 @@ module private Clustering =
 
             Rating = data |> Seq.map (fst >> _.Strains) |> Seq.concat |> rate_difficulty
 
+            HoldCoverage = Percentiles.create hold_coverages
             Variety = Percentiles.create varieties
             Density = Percentiles.create densities
 

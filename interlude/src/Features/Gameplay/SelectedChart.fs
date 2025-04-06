@@ -36,7 +36,7 @@ type LoadedChartInfo =
         WithMods: ModdedChart
         NotecountsString: string
         Difficulty: Difficulty
-        Patterns: PatternReport
+        Patterns: PatternInfo
 
         WithColors: ColoredChart
     }
@@ -94,7 +94,7 @@ module SelectedChart =
     let mutable WITH_MODS: ModdedChart option = None
     let mutable FMT_NOTECOUNTS: string option = None
     let mutable DIFFICULTY: Difficulty option = None
-    let mutable PATTERNS: PatternReport option = None
+    let mutable PATTERNS: PatternInfo option = None
 
     let mutable WITH_COLORS: ColoredChart option = None
 
@@ -189,7 +189,7 @@ module SelectedChart =
                         let with_colors = NoteColors.apply (Content.NoteskinConfig.NoteColors) with_mods
 
                         let rating = Difficulty.calculate(rate, with_mods.Notes)
-                        let patterns = PatternReport.from_chart(rating, with_mods.AsChart)
+                        let patterns = PatternInfo.from_chart(rate, with_mods.AsChart) // todo: share difficulty calculation with this OR use difficulty result from this
 
                         let note_counts = format_notecounts with_mods
 
@@ -224,7 +224,7 @@ module SelectedChart =
                         let rating = Difficulty.calculate(rate, with_mods.Notes)
 
                         let note_counts = format_notecounts with_mods
-                        let patterns = PatternReport.from_chart(rating, with_mods.AsChart)
+                        let patterns = PatternInfo.from_chart(rate, with_mods.AsChart)
 
                         yield
                             fun () ->
