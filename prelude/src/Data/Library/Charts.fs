@@ -12,7 +12,7 @@ module DbCharts =
     let private no_nan x = if System.Single.IsFinite x then x else 0.0f
 
     // Increment this to recalculate pattern & rating data
-    let private CALC_VERSION = 6uy
+    let private CALC_VERSION = 7uy
 
     // todo: create binary representation of Patterns data for much faster reading/writing and storage efficiency
     let internal CREATE_TABLE: NonQuery<unit> =
