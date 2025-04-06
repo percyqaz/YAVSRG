@@ -40,6 +40,7 @@ module Suggestion =
         |> Option.map _.Pattern
         |> Option.defaultValue Stream
 
+    // todo: to be written as part of the actual pattern code where it can be tested!
     let private pattern_similarity (total: Time) (rate: Rate, patterns: PatternReport) (c_rate: Rate, c_patterns: PatternReport) : float32 =
 
         let c_total = c_patterns.Clusters |> Seq.sumBy _.Amount
@@ -50,12 +51,12 @@ module Suggestion =
         for p2 in c_patterns.Clusters do
             for p1 in patterns.Clusters do
                 if p1.Pattern = p2.Pattern then
-                    let mixed_similarity = if p1.Mixed = p2.Mixed then 1.0f else 0.5f
-                    let bpm_similarity =
-                        let difference = (rate * float32 p1.BPM) / (c_rate * float32 p2.BPM) |> log |> abs
-                        Math.Clamp(1.0f - 10.0f * difference, 0.0f, 1.0f)
+                    let mixed_similarity = if p1.Type.IsMixed = p2.Type.IsMixed then 1.0f else 0.5f
+                    let bpm_similarity = 1.0f
+                        //let difference = (rate * float32 p1.BPM) / (c_rate * float32 p2.BPM) |> log |> abs
+                        //Math.Clamp(1.0f - 10.0f * difference, 0.0f, 1.0f)
                     let density_similarity =
-                        let difference = (rate * p1.Density75) / (c_rate * p2.Density75) |> log |> abs
+                        let difference = (rate * p1.Density.P75) / (c_rate * p2.Density.P75) |> log |> abs
                         Math.Clamp(1.0f - 10.0f * difference, 0.0f, 1.0f)
                     similarity <- similarity + mixed_similarity * bpm_similarity * density_similarity * (p1.Amount / total) * (p2.Amount / c_total)
         similarity

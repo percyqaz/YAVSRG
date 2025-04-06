@@ -96,41 +96,43 @@ module KeymodeSkillBreakdown =
 
     let private skill_increase (patterns: PatternReport) (accuracy: float) (rate: Rate) (skills: KeymodeSkillBreakdown) : unit =
 
-        let total_stream = patterns.Clusters |> Seq.where(fun c -> c.Pattern = Stream) |> Seq.sumBy _.Amount
-        let total_chordstream = patterns.Clusters |> Seq.where(fun c -> c.Pattern = Chordstream) |> Seq.sumBy _.Amount
-        let total_jacks = patterns.Clusters |> Seq.where(fun c -> c.Pattern = Jacks) |> Seq.sumBy _.Amount
+        ignore()
 
-        let combined_multiplier =
-            (
-                sqrt (total_stream / patterns.Duration)
-                + sqrt (total_chordstream / patterns.Duration)
-                + sqrt (total_jacks / patterns.Duration)
-            ) / COMBINED_MULTIPLIER_SCALE_CONSTANT
+        //let total_stream = patterns.Clusters |> Seq.where(fun c -> c.Pattern = Stream) |> Seq.sumBy _.Amount
+        //let total_chordstream = patterns.Clusters |> Seq.where(fun c -> c.Pattern = Chordstream) |> Seq.sumBy _.Amount
+        //let total_jacks = patterns.Clusters |> Seq.where(fun c -> c.Pattern = Jacks) |> Seq.sumBy _.Amount
 
-        CombinedSkillBreakdown.observe (patterns.Density10 * rate * combined_multiplier, accuracy, patterns.Duration / rate * 1.8f) skills.Combined
-        CombinedSkillBreakdown.observe (patterns.Density25 * rate * combined_multiplier, accuracy, patterns.Duration / rate * 1.5f) skills.Combined
-        CombinedSkillBreakdown.observe (patterns.Density50 * rate * combined_multiplier, accuracy, patterns.Duration / rate) skills.Combined
-        CombinedSkillBreakdown.observe (patterns.Density75 * rate * combined_multiplier, accuracy, patterns.Duration / rate * 0.5f) skills.Combined
-        CombinedSkillBreakdown.observe (patterns.Density90 * rate * combined_multiplier, accuracy, patterns.Duration / rate * 0.2f) skills.Combined
+        //let combined_multiplier =
+        //    (
+        //        sqrt (total_stream / patterns.Duration)
+        //        + sqrt (total_chordstream / patterns.Duration)
+        //        + sqrt (total_jacks / patterns.Duration)
+        //    ) / COMBINED_MULTIPLIER_SCALE_CONSTANT
 
-        for p in patterns.Clusters do
+        //CombinedSkillBreakdown.observe (patterns.Density10 * rate * combined_multiplier, accuracy, patterns.Duration / rate * 1.8f) skills.Combined
+        //CombinedSkillBreakdown.observe (patterns.Density25 * rate * combined_multiplier, accuracy, patterns.Duration / rate * 1.5f) skills.Combined
+        //CombinedSkillBreakdown.observe (patterns.Density50 * rate * combined_multiplier, accuracy, patterns.Duration / rate) skills.Combined
+        //CombinedSkillBreakdown.observe (patterns.Density75 * rate * combined_multiplier, accuracy, patterns.Duration / rate * 0.5f) skills.Combined
+        //CombinedSkillBreakdown.observe (patterns.Density90 * rate * combined_multiplier, accuracy, patterns.Duration / rate * 0.2f) skills.Combined
 
-            let time =
-                patterns.Clusters
-                |> Seq.filter (fun p2 -> p2.Pattern = p.Pattern && p2.BPM >= p.BPM && p2.Density50 >= p.Density50)
-                |> Seq.sumBy _.Amount
+        //for p in patterns.Clusters do
 
-            let skill =
-                match p.Pattern with
-                | Jacks -> skills.Jacks
-                | Chordstream -> skills.Chordstream
-                | Stream -> skills.Stream
+        //    let time =
+        //        patterns.Clusters
+        //        |> Seq.filter (fun p2 -> p2.Pattern = p.Pattern && p2.BPM >= p.BPM && p2.Density50 >= p.Density50)
+        //        |> Seq.sumBy _.Amount
 
-            PatternSkillBreakdown.observe p.Pattern (p.Density10 * rate, accuracy, time / rate * 1.8f) skill
-            PatternSkillBreakdown.observe p.Pattern (p.Density25 * rate, accuracy, time / rate * 1.5f) skill
-            PatternSkillBreakdown.observe p.Pattern (p.Density50 * rate, accuracy, time / rate) skill
-            PatternSkillBreakdown.observe p.Pattern (p.Density75 * rate, accuracy, time / rate * 0.5f) skill
-            PatternSkillBreakdown.observe p.Pattern (p.Density90 * rate, accuracy, time / rate * 0.2f) skill
+        //    let skill =
+        //        match p.Pattern with
+        //        | Jacks -> skills.Jacks
+        //        | Chordstream -> skills.Chordstream
+        //        | Stream -> skills.Stream
+
+        //    PatternSkillBreakdown.observe p.Pattern (p.Density10 * rate, accuracy, time / rate * 1.8f) skill
+        //    PatternSkillBreakdown.observe p.Pattern (p.Density25 * rate, accuracy, time / rate * 1.5f) skill
+        //    PatternSkillBreakdown.observe p.Pattern (p.Density50 * rate, accuracy, time / rate) skill
+        //    PatternSkillBreakdown.observe p.Pattern (p.Density75 * rate, accuracy, time / rate * 0.5f) skill
+        //    PatternSkillBreakdown.observe p.Pattern (p.Density90 * rate, accuracy, time / rate * 0.2f) skill
 
     let score (patterns: PatternReport) (accuracy: float) (rate: Rate) (skills: KeymodeSkillBreakdown) : KeymodeSkillIncrease =
 
