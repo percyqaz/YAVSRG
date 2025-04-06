@@ -109,14 +109,25 @@ type Cluster<'D> =
         * (match this.Type with ClusterType.Combined _ -> 0.3f | _ -> 1.0f)
         |> float32
 
+    member this.Importance2 : float32 =
+        float32 this.BPM *
+        match this.Pattern with
+        | Jacks -> 1.8f
+        | Chordstream -> 1.0f
+        | Stream -> 0.8f
+
     member this.Supersedes (other: Cluster<'D>) : bool =
         if this.Pattern = other.Pattern then
 
             this.Type.IsCombined
             || other.Type.IsCombined
             || (this.Amount * 0.5f > other.Amount && this.BPM > other.BPM)
+            || (this.Amount / 60.0f > other.Amount)
 
-        else false
+        else
+
+            this.Importance2 + 2f > other.Importance2
+            && (this.Amount * 0.5f > other.Amount)
 
 module private Clustering =
 
