@@ -30,11 +30,11 @@ type CorePattern =
         | Chordstream -> ( 0.98, 0.95, 0.91 )
         | Jacks -> ( 0.99, 0.96, 0.93 )
 
-type PatternRecogniser = RowInfo list -> int
+type PatternRecogniser<'D> = RowInfo<'D> list -> int
 
 module Core =
 
-    let STREAM : PatternRecogniser =
+    let STREAM : PatternRecogniser<_> =
         function
         |      { Notes = 1; Jacks = 0; RawNotes = x }
             :: { Notes = 1; Jacks = 0 }
@@ -44,13 +44,13 @@ module Core =
             :: _ when x.[0] <> y.[0] -> 5
         | _ -> 0
 
-    let JACKS : PatternRecogniser =
+    let JACKS : PatternRecogniser<_> =
         function
         |   { Jacks = x; MsPerBeat = mspb }
             :: _ when x > 1 && mspb < 2000.0f<_> -> 1
         | _ -> 0
 
-    let CHORDSTREAM : PatternRecogniser =
+    let CHORDSTREAM : PatternRecogniser<_> =
         function
         |      { Notes = a; Jacks = 0 }
             :: { Notes = b; Jacks = 0 }
@@ -61,21 +61,21 @@ module Core =
 
 module Jacks =
 
-    let CHORDJACKS : PatternRecogniser =
+    let CHORDJACKS : PatternRecogniser<_> =
         function
         |   { Notes = a }
             :: { Notes = b; Jacks = j }
             :: _ when a > 2 && b > 1 && j >= 1 && (b < a || j < b) -> 2
         | _ -> 0
 
-    let MINIJACKS : PatternRecogniser =
+    let MINIJACKS : PatternRecogniser<_> =
         function
         |   { Jacks = x }
             :: { Jacks = 0 }
             :: _ when x > 0 -> 2
         | _ -> 0
 
-    let LONGJACKS : PatternRecogniser =
+    let LONGJACKS : PatternRecogniser<_> =
         function
         |   { Jacks = a; RawNotes = ra }
             :: { Jacks = b; RawNotes = rb }
@@ -91,7 +91,7 @@ module Jacks =
 
 module Jacks_4K =
 
-    let QUADSTREAM : PatternRecogniser =
+    let QUADSTREAM : PatternRecogniser<_> =
         function
         |   { Notes = 4 }
             :: _
@@ -99,7 +99,7 @@ module Jacks_4K =
             :: { Jacks = 0 } :: _ -> 4
         | _ -> 0
 
-    let GLUTS : PatternRecogniser =
+    let GLUTS : PatternRecogniser<_> =
         function
         |   { RawNotes = ra }
             :: { Jacks = 1; RawNotes = rb }
@@ -113,7 +113,7 @@ module Jacks_4K =
 
 module Chordstream_4K =
 
-    let HANDSTREAM : PatternRecogniser =
+    let HANDSTREAM : PatternRecogniser<_> =
         function
         |      { Notes = 3; Jacks = 0 }
             :: { Jacks = 0 }
@@ -122,7 +122,7 @@ module Chordstream_4K =
             :: _ -> 4
         | _ -> 0
 
-    let JUMPSTREAM : PatternRecogniser =
+    let JUMPSTREAM : PatternRecogniser<_> =
         function
         |      { Notes = 2; Jacks = 0 }
             :: { Notes = 1; Jacks = 0 }
@@ -131,7 +131,7 @@ module Chordstream_4K =
             :: _ when a < 3 && b < 3 -> 4
         | _ -> 0
 
-    let DOUBLE_JUMPSTREAM : PatternRecogniser =
+    let DOUBLE_JUMPSTREAM : PatternRecogniser<_> =
         function
         |      { Notes = 1; Jacks = 0 }
             :: { Notes = 2; Jacks = 0 }
@@ -140,7 +140,7 @@ module Chordstream_4K =
             :: _ -> 4
         | _ -> 0
 
-    let TRIPLE_JUMPSTREAM : PatternRecogniser =
+    let TRIPLE_JUMPSTREAM : PatternRecogniser<_> =
         function
         |      { Notes = 1; Jacks = 0 }
             :: { Notes = 2; Jacks = 0 }
@@ -150,7 +150,7 @@ module Chordstream_4K =
             :: _ -> 4
         | _ -> 0
 
-    let JUMPTRILL : PatternRecogniser =
+    let JUMPTRILL : PatternRecogniser<_> =
         function
         |      { Notes = 2 }
             :: { Notes = 2; Roll = true }
@@ -159,7 +159,7 @@ module Chordstream_4K =
             :: _ -> 4
         | _ -> 0
 
-    let SPLITTRILL : PatternRecogniser =
+    let SPLITTRILL : PatternRecogniser<_> =
         function
         |      { Notes = 2 }
             :: { Notes = 2; Jacks = 0; Roll = false }
@@ -169,7 +169,7 @@ module Chordstream_4K =
 
 module Stream_4K =
 
-    let ROLL : PatternRecogniser =
+    let ROLL : PatternRecogniser<_> =
         function
         |      { Notes = 1; Direction = Direction.Left }
             :: { Notes = 1; Direction = Direction.Left }
@@ -181,7 +181,7 @@ module Stream_4K =
             :: _ -> 3
         | _ -> 0
 
-    let TRILL : PatternRecogniser =
+    let TRILL : PatternRecogniser<_> =
         function
         |      { RawNotes = a }
             :: { RawNotes = b; Jacks = 0 }
@@ -190,7 +190,7 @@ module Stream_4K =
             :: _ when a = c && b = d -> 4
         | _ -> 0
 
-    let MINITRILL : PatternRecogniser =
+    let MINITRILL : PatternRecogniser<_> =
         function
         |      { RawNotes = a }
             :: { RawNotes = b; Jacks = 0 }
@@ -201,28 +201,28 @@ module Stream_4K =
 
 module Chordstream_7K =
 
-    let DOUBLE_STREAMS : PatternRecogniser =
+    let DOUBLE_STREAMS : PatternRecogniser<_> =
         function
         |      { Notes = 2 }
             :: { Notes = 2; Jacks = 0; Roll = false }
             :: _ -> 2
         | _ -> 0
 
-    let DENSE_CHORDSTREAM : PatternRecogniser =
+    let DENSE_CHORDSTREAM : PatternRecogniser<_> =
         function
         |      { Notes = x }
             :: { Notes = y; Jacks = 0 }
             :: _ when x > 1 && y > 1 -> 2
         | _ -> 0
 
-    let LIGHT_CHORDSTREAM : PatternRecogniser =
+    let LIGHT_CHORDSTREAM : PatternRecogniser<_> =
         function
         |      { Notes = x }
             :: { Notes = y; Jacks = 0 }
             :: _ when x > 1 && y = 1 -> 2
         | _ -> 0
 
-    let CHORD_ROLL : PatternRecogniser =
+    let CHORD_ROLL : PatternRecogniser<_> =
         function
         |      { Notes = x }
             :: { Notes = y; Direction = Direction.Left; Roll = true }
@@ -234,7 +234,7 @@ module Chordstream_7K =
             :: _ when x > 1 && y > 1 && z > 1 -> 3
         | _ -> 0
 
-    let BRACKETS : PatternRecogniser =
+    let BRACKETS : PatternRecogniser<_> =
         function
         |      { Notes = x }
             :: { Notes = y; Roll = false; Jacks = 0 }
@@ -244,28 +244,28 @@ module Chordstream_7K =
 
 module Chordstream_Other =
 
-    let DOUBLE_STREAMS : PatternRecogniser =
+    let DOUBLE_STREAMS : PatternRecogniser<_> =
         function
         |      { Notes = 2 }
             :: { Notes = 2; Jacks = 0; Roll = false }
             :: _ -> 2
         | _ -> 0
 
-    let DENSE_CHORDSTREAM : PatternRecogniser =
+    let DENSE_CHORDSTREAM : PatternRecogniser<_> =
         function
         |      { Notes = x }
             :: { Notes = y; Jacks = 0 }
             :: _ when x > 1 && y > 1 -> 2
         | _ -> 0
 
-    let LIGHT_CHORDSTREAM : PatternRecogniser =
+    let LIGHT_CHORDSTREAM : PatternRecogniser<_> =
         function
         |      { Notes = x }
             :: { Notes = y; Jacks = 0 }
             :: _ when x > 1 && y = 1 -> 2
         | _ -> 0
 
-    let CHORD_ROLL : PatternRecogniser =
+    let CHORD_ROLL : PatternRecogniser<_> =
         function
         |      { Notes = x }
             :: { Notes = y; Direction = Direction.Left; Roll = true }
@@ -277,13 +277,13 @@ module Chordstream_Other =
             :: _ when x > 1 && y > 1 && z > 1 -> 3
         | _ -> 0
 
-type SpecificPatterns =
+type SpecificPatterns<'D> =
     {
-        Stream: (string * PatternRecogniser) list
-        Chordstream: (string * PatternRecogniser) list
-        Jack: (string * PatternRecogniser) list
+        Stream: (string * PatternRecogniser<'D>) list
+        Chordstream: (string * PatternRecogniser<'D>) list
+        Jack: (string * PatternRecogniser<'D>) list
     }
-    static member SPECIFIC_4K =
+    static member SPECIFIC_4K : SpecificPatterns<'D> =
         {
             Stream =
                 [
@@ -310,7 +310,7 @@ type SpecificPatterns =
                 ]
         }
 
-    static member SPECIFIC_7K =
+    static member SPECIFIC_7K : SpecificPatterns<'D> =
         {
             // todo: roll, trill
             Stream = []
@@ -330,7 +330,7 @@ type SpecificPatterns =
                 ]
         }
 
-    static member SPECIFIC_OTHER =
+    static member SPECIFIC_OTHER : SpecificPatterns<'D> =
         {
             // todo: roll, trill
             Stream = []

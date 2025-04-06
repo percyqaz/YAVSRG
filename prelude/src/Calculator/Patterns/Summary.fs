@@ -8,7 +8,7 @@ open Prelude.Calculator
 [<Json.AutoCodec>]
 type PatternReport =
     {
-        Clusters: Cluster array
+        Clusters: Cluster<float32> array
         Category: string
         LNPercent: float32
         SVAmount: Time
@@ -48,15 +48,14 @@ module PatternReport =
 
     let from_chart_uncached (difficulty_info: Difficulty, chart: Chart) : PatternReport =
         let density = Density.process_chart chart
-        let hold_coverage = HoldCoverage.calculate_coverage (chart.Keys, chart.Notes, 1.0f<rate>)
-        let patterns = Patterns.find (density, hold_coverage, difficulty_info, chart)
+        let patterns = Patterns.find_rate (chart, 1.0f<rate>)
         let clusters =
-            Clustering.calculate_clustered_patterns patterns
-            |> Seq.filter (fun c -> c.BPM > 25<beat / minute / rate>)
+            Clustering.get_clusters_rate patterns
+            |> Seq.filter (fun c -> not c.ShouldIgnore)
             |> Seq.sortByDescending (fun x -> x.Amount)
             |> Array.ofSeq
 
-        let can_be_pruned (cluster: Cluster) =
+        let can_be_pruned (cluster: Cluster<float32>) =
             clusters
             |> Seq.exists (fun other ->
                 other.Pattern = cluster.Pattern
@@ -76,17 +75,18 @@ module PatternReport =
 
         let sv_amount = Metrics.sv_time chart
         let sorted_densities = density |> Array.sort
+        let density_percentiles = Percentiles.create sorted_densities
 
         {
             Clusters = pruned_clusters
             LNPercent = Metrics.ln_percent chart
             SVAmount = sv_amount
             Category = Categorise.categorise_chart (chart.Keys, pruned_clusters, sv_amount)
-            Density10 = Clustering.find_percentile 0.1f sorted_densities
-            Density25 = Clustering.find_percentile 0.25f sorted_densities
-            Density50 = Clustering.find_percentile 0.5f sorted_densities
-            Density75 = Clustering.find_percentile 0.75f sorted_densities
-            Density90 = Clustering.find_percentile 0.9f sorted_densities
+            Density10 = density_percentiles.P10
+            Density25 = density_percentiles.P25
+            Density50 = density_percentiles.P50
+            Density75 = density_percentiles.P75
+            Density90 = density_percentiles.P90
 
             Duration = chart.LastNote - chart.FirstNote
         }

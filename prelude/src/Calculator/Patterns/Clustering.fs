@@ -22,46 +22,89 @@ type private ClusterBuilder =
 
     member this.Value = this.BPM.Value
 
+[<Struct>]
 [<Json.AutoCodec>]
-type Cluster =
+type Percentiles<'T> =
+    {
+        P10: 'T
+        P25: 'T
+        P50: 'T
+        P75: 'T
+        P90: 'T
+    }
+
+module Percentiles =
+
+    let zero (value: 'T) =
+        {
+            P10 = value
+            P25 = value
+            P50 = value
+            P75 = value
+            P90 = value
+        }
+
+    let find (percentile: float32, sorted_values: float32<'u> array) : float32<'u> =
+        if sorted_values.Length = 0 then 0.0f |> LanguagePrimitives.Float32WithMeasure else
+        let index = percentile * float32 sorted_values.Length |> floor |> int
+        sorted_values.[index]
+
+    let create (sorted_values: float32<'u> array) : Percentiles<float32<'u>> =
+        {
+            P10 = find(0.1f, sorted_values)
+            P25 = find(0.25f, sorted_values)
+            P50 = find(0.5f, sorted_values)
+            P75 = find(0.75f, sorted_values)
+            P90 = find(0.9f, sorted_values)
+        }
+
+[<RequireQualifiedAccess>]
+[<Json.AutoCodec>]
+type ClusterType =
+    | Normal of bpm: int<beat / minute / rate>
+    | Mixed of bpm: int<beat / minute / rate>
+    | Combined
+
+[<Json.AutoCodec>]
+type Cluster<'D> =
     {
         Pattern: CorePattern
-        SpecificTypes: (string * float32) list
-        BPM: int<beat / minute / rate>
-        Mixed: bool
+        Type: ClusterType
+        SpecificTypes: (string * float32) list // todo: rename SpecificPatterns
 
-        // todo: gonna need a Rating100 and Rating150
-        Rating: float32
+        Rating: 'D
 
-        Density10: Density
-        Density25: Density
-        Density50: Density
-        Density75: Density
-        Density90: Density
+        Variety: Percentiles<float32>
+        Density: Percentiles<Density>
 
         Amount: Time
     }
+
+    member this.ShouldIgnore =
+        match this.BPM with Some i when i < 25<beat / minute / rate> -> true | _ -> false
+
+    member this.BPM : int<beat / minute / rate> option =
+        match this.Type with
+        | ClusterType.Normal bpm -> Some bpm
+        | ClusterType.Mixed bpm -> Some bpm
+        | ClusterType.Combined -> None
 
     static member Default =
         {
             Pattern = Jacks
             SpecificTypes = []
-            BPM = 120<beat / minute / rate>
-            Mixed = false
+            Type = ClusterType.Normal 120<beat / minute / rate>
 
             Rating = 0.0f
 
-            Density10 = 0.0f</rate>
-            Density25 = 0.0f</rate>
-            Density50 = 0.0f</rate>
-            Density75 = 0.0f</rate>
-            Density90 = 0.0f</rate>
+            Variety = Percentiles.zero(0.0f)
+            Density = Percentiles.zero(0.0f</rate>)
 
             Amount = 1.0f<ms>
         }
 
     member this.Importance =
-        this.Amount * this.Pattern.DensityToBPM * this.Density50 * (if this.BPM > 0<beat / minute / rate> then 1.0f else 0.5f)
+        this.Amount * this.Pattern.DensityToBPM * this.Density.P50 * (match this.Type with ClusterType.Combined -> 0.5f | _ -> 1.0f)
 
     member this.Format (rate: Rate) =
 
@@ -70,19 +113,16 @@ type Cluster =
             | (t, amount) :: _ when amount > 0.4f -> t
             | _ -> this.Pattern.ToString()
 
-        if this.Mixed then
-            sprintf "~%.0fBPM Mixed %s" (float32 this.BPM * rate) name
-        else
-            sprintf "%.0fBPM %s" (float32 this.BPM * rate) name
+        match this.Type with
+        | ClusterType.Normal bpm ->
+            sprintf "%.0fBPM %s" (float32 bpm * rate) name
+        | ClusterType.Mixed bpm ->
+            sprintf "~%.0fBPM Mixed %s" (float32 bpm * rate) name
+        | ClusterType.Combined -> name
 
 module private Clustering =
 
     let BPM_CLUSTER_THRESHOLD = 5.0f<ms / beat>
-
-    let find_percentile (percentile: float32) (sorted_values: float32<'u> array) : float32<'u> =
-        if sorted_values.Length = 0 then 0.0f |> LanguagePrimitives.Float32WithMeasure else
-        let index = percentile * float32 sorted_values.Length |> floor |> int
-        sorted_values.[index]
 
     let private pattern_amount (sorted_starts_ends: (Time * Time) array) : Time =
 
@@ -106,7 +146,7 @@ module private Clustering =
 
         total_time
 
-    let assign_clusters (patterns: FoundPattern array) : (FoundPattern * ClusterBuilder) array =
+    let assign_clusters (patterns: FoundPattern<'D> array) : (FoundPattern<'D> * ClusterBuilder) array =
         let bpms_non_mixed = ResizeArray<ClusterBuilder>()
         let bpms_mixed = Dictionary<CorePattern, ClusterBuilder>()
 
@@ -162,7 +202,7 @@ module private Clustering =
 
         patterns_with_clusters
 
-    let specific_clusters (patterns_with_clusters: (FoundPattern * ClusterBuilder) array) : Cluster array =
+    let specific_clusters (rate_difficulty: 'D seq -> 'D, patterns_with_clusters: (FoundPattern<'D> * ClusterBuilder) array) : Cluster<'D> array =
 
         patterns_with_clusters
         |> Array.groupBy (fun (pattern, c) ->
@@ -171,6 +211,7 @@ module private Clustering =
         |> Array.map (fun ((pattern, mixed, bpm), data) ->
             let starts_ends = data |> Array.map (fun (m, _) -> m.Start, m.End)
             let densities = data |> Array.map (fst >> _.Density) |> Array.sort
+            let varieties = data |> Array.map (fst >> _.Variety) |> Array.sort
 
             let data_count = float32 data.Length
             let specific_types =
@@ -183,23 +224,19 @@ module private Clustering =
 
             {
                 Pattern = pattern
+                Type = if mixed then ClusterType.Mixed bpm else ClusterType.Normal bpm
                 SpecificTypes = specific_types
-                BPM = bpm
-                Mixed = mixed
 
-                Rating = data |> Seq.map (fst >> _.Strains) |> Seq.concat |> Seq.filter (fun x -> x > 0.0f) |> Difficulty.weighted_overall_difficulty
+                Rating = data |> Seq.map (fst >> _.Strains) |> Seq.concat |> rate_difficulty
 
-                Density10 = find_percentile 0.1f densities
-                Density25 = find_percentile 0.25f densities
-                Density50 = find_percentile 0.5f densities
-                Density75 = find_percentile 0.75f densities
-                Density90 = find_percentile 0.9f densities
+                Variety = Percentiles.create varieties
+                Density = Percentiles.create densities
 
                 Amount = pattern_amount starts_ends
             }
         )
 
-    let core_pattern_cluster (pattern_type: CorePattern) (patterns_with_clusters: (FoundPattern * ClusterBuilder) array) : Cluster option =
+    let core_pattern_cluster (pattern_type: CorePattern, rate_difficulty: 'D seq -> 'D, patterns_with_clusters: (FoundPattern<'D> * ClusterBuilder) array) : Cluster<'D> option =
 
         let data =
             patterns_with_clusters
@@ -209,6 +246,7 @@ module private Clustering =
 
         let starts_ends = data |> Array.map (fun (m, _) -> m.Start, m.End)
         let densities = data |> Array.map (fst >> _.Density) |> Array.sort
+        let varieties = data |> Array.map (fst >> _.Variety) |> Array.sort
 
         let data_count = float32 data.Length
         let specific_types =
@@ -222,33 +260,41 @@ module private Clustering =
         Some {
             Pattern = pattern_type
             SpecificTypes = specific_types
-            // todo: type ClusterType = | Normal of bpm: int | Mixed of bpm: int | Combined
-            BPM = 0<beat / minute / rate>
-            Mixed = true
+            Type = ClusterType.Combined
 
-            Rating = data |> Seq.map (fst >> _.Strains) |> Seq.concat |> Seq.filter (fun x -> x > 0.0f) |> Difficulty.weighted_overall_difficulty
+            Rating = data |> Seq.map (fst >> _.Strains) |> Seq.concat |> rate_difficulty
 
-            Density10 = find_percentile 0.1f densities
-            Density25 = find_percentile 0.25f densities
-            Density50 = find_percentile 0.5f densities
-            Density75 = find_percentile 0.75f densities
-            Density90 = find_percentile 0.9f densities
+            Variety = Percentiles.create varieties
+            Density = Percentiles.create densities
 
             Amount = pattern_amount starts_ends
         }
 
-    let calculate_clustered_patterns (patterns: FoundPattern array) : Cluster array =
+    let get_clusters_rate (patterns: FoundPattern<float32> array) : Cluster<float32> array =
         let patterns_with_clusters = assign_clusters patterns
-        specific_clusters patterns_with_clusters
+        specific_clusters (Seq.filter (fun x -> x > 0.0f) >> Difficulty.weighted_overall_difficulty, patterns_with_clusters)
 
-    let calculate_clustered_patterns_v2 (patterns: FoundPattern array) : Cluster array =
+    let get_clusters_multirate (patterns: FoundPattern<float32 * float32> array) : Cluster<float32 * float32> array =
         let patterns_with_clusters = assign_clusters patterns
-        let specific_clusters = specific_clusters patterns_with_clusters
 
-        seq {
-            yield! specific_clusters |> Seq.where (fun x -> x.BPM > 25<beat / minute / rate>)
-            yield! core_pattern_cluster Jacks patterns_with_clusters |> Option.toList
-            yield! core_pattern_cluster Chordstream patterns_with_clusters |> Option.toList
-            yield! core_pattern_cluster Stream patterns_with_clusters |> Option.toList
-        }
-        |> Array.ofSeq
+        let difficulties_to_ratings (ds: (float32 * float32) seq) =
+            let values =
+                ds
+                |> Seq.filter (fun (x, _) -> x > 0.0f)
+                |> Array.ofSeq
+            Difficulty.weighted_overall_difficulty (Seq.map fst values),
+            Difficulty.weighted_overall_difficulty (Seq.map snd values)
+
+        specific_clusters (difficulties_to_ratings, patterns_with_clusters)
+
+    //let calculate_clustered_patterns_v2 (patterns: FoundPattern<'D> array) : Cluster<'D> array =
+    //    let patterns_with_clusters = assign_clusters patterns
+    //    let specific_clusters = specific_clusters patterns_with_clusters
+
+    //    seq {
+    //        yield! specific_clusters |> Seq.where (fun x -> x.BPM > 25<beat / minute / rate>)
+    //        yield! core_pattern_cluster Jacks patterns_with_clusters |> Option.toList
+    //        yield! core_pattern_cluster Chordstream patterns_with_clusters |> Option.toList
+    //        yield! core_pattern_cluster Stream patterns_with_clusters |> Option.toList
+    //    }
+    //    |> Array.ofSeq

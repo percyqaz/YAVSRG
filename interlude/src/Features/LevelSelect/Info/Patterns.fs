@@ -12,7 +12,7 @@ open Interlude.Features.Gameplay
 type Patterns(display: Setting<InfoPanelMode>) =
     inherit Container(NodeType.None)
 
-    let mutable patterns: Cluster array = [||]
+    let mutable patterns: Cluster<float32> array = [||]
     let mutable category: string = ""
 
     let on_chart_update(info: LoadedChartInfo) =
@@ -50,7 +50,7 @@ type Patterns(display: Setting<InfoPanelMode>) =
         for entry in patterns do
             Text.fill_b (
                 Style.font,
-                (sprintf "%s%O" (if entry.Mixed then "Mixed " else "") entry.Pattern),
+                (sprintf "%O" entry.Pattern),
                 b.ShrinkB(25.0f).SliceL(TEXT_WIDTH),
                 Colors.text,
                 Alignment.LEFT
@@ -59,10 +59,11 @@ type Patterns(display: Setting<InfoPanelMode>) =
             Text.fill_b (
                 Style.font,
                 (
-                    if entry.Mixed then
-                        sprintf "~%.0f BPM / %.2f*" (float32 entry.BPM * SelectedChart.rate.Value) entry.Rating
-                    else
-                        sprintf "%.0f BPM / %.2f*" (float32 entry.BPM * SelectedChart.rate.Value) entry.Rating
+                    entry.Format SelectedChart.rate.Value
+                    //if entry.Mixed then
+                    //    sprintf "~%.0f BPM / %.2f*" (float32 entry.BPM * SelectedChart.rate.Value) entry.Rating
+                    //else
+                    //    sprintf "%.0f BPM / %.2f*" (float32 entry.BPM * SelectedChart.rate.Value) entry.Rating
                 ),
                 b.SliceB(30.0f).SliceL(TEXT_WIDTH),
                 Colors.text_subheading,
@@ -93,11 +94,11 @@ type Patterns(display: Setting<InfoPanelMode>) =
                     (b.Top + 27.5f)
                     (Quad.gradient_left_to_right (density_color lo_val) (density_color hi_val))
 
-            bar (0.0f, entry.Density10, 0.1f, entry.Density10)
-            bar (0.1f, entry.Density10, 0.25f, entry.Density25)
-            bar (0.25f, entry.Density25, 0.5f, entry.Density50)
-            bar (0.5f, entry.Density50, 0.75f, entry.Density75)
-            bar (0.75f, entry.Density75, 0.9f, entry.Density90)
-            bar (0.9f, entry.Density90, 1.0f, entry.Density90)
+            //bar (0.0f, entry.Density10, 0.1f, entry.Density10)
+            //bar (0.1f, entry.Density10, 0.25f, entry.Density25)
+            //bar (0.25f, entry.Density25, 0.5f, entry.Density50)
+            //bar (0.5f, entry.Density50, 0.75f, entry.Density75)
+            //bar (0.75f, entry.Density75, 0.9f, entry.Density90)
+            //bar (0.9f, entry.Density90, 1.0f, entry.Density90)
 
             b <- b.Translate(0.0f, 60.0f)

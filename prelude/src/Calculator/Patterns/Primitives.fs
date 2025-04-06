@@ -13,7 +13,7 @@ type Direction =
     | Outwards
     | Inwards
 
-type RowInfo =
+type RowInfo<'D> =
     {
         Index: int
         Time: Time
@@ -23,9 +23,9 @@ type RowInfo =
         Direction: Direction
         Roll: bool
         Density: Density
-        Variety: float32
+        Variety: float32 // todo: consider 'D for this too
         HoldCoverage: float32
-        Strains: float32 array
+        Strains: 'D array
         RawNotes: int array
     }
 
@@ -64,7 +64,7 @@ module internal Primitives =
         let is_roll = pleftmost > crightmost || prightmost < cleftmost
         direction, is_roll
 
-    let calculate (density: Density array, hold_coverage: float32 array, difficulty_info: Difficulty, chart: Chart) : RowInfo list =
+    let private calculate (density: Density array, hold_coverage: float32 array, get_variety: int -> float32, get_strains: int -> 'D array, chart: Chart) : RowInfo<'D> list =
 
         let { Time = first_note; Data = row } = (TimeArray.first chart.Notes).Value
 
@@ -105,8 +105,8 @@ module internal Primitives =
                             Roll = is_roll
                             Density = density.[index]
                             HoldCoverage = hold_coverage.[index]
-                            Variety = difficulty_info.Variety.[index]
-                            Strains = difficulty_info.Strains.[index].StrainV1Notes
+                            Variety = get_variety index
+                            Strains = get_strains index
                             RawNotes = current_row
                         }
 
@@ -114,6 +114,34 @@ module internal Primitives =
                     previous_time <- t
         }
         |> List.ofSeq
+
+    let calculate_rate (chart: Chart, rate: Rate) : RowInfo<float32> list =
+
+        let density = Density.process_chart chart
+        let hold_coverage = HoldCoverage.calculate_coverage (chart.Keys, chart.Notes, rate)
+        let difficulty_info = Difficulty.calculate (rate, chart.Notes)
+
+        calculate(
+            density,
+            hold_coverage,
+            (fun i -> difficulty_info.Variety.[i]),
+            (fun i -> difficulty_info.Strains.[i].StrainV1Notes),
+            chart
+        )
+
+    let calculate_multirate (chart: Chart) : RowInfo<float32 * float32> list =
+        let density = Density.process_chart chart
+        let hold_coverage = HoldCoverage.calculate_coverage (chart.Keys, chart.Notes, 1.0f<rate>)
+        let difficulty100 = Difficulty.calculate (1.0f<rate>, chart.Notes)
+        let difficulty150 = Difficulty.calculate (1.0f<rate>, chart.Notes)
+
+        calculate(
+            density,
+            hold_coverage,
+            (fun i -> difficulty100.Variety.[i]), // todo: consider using both
+            (fun i -> Array.zip difficulty100.Strains.[i].StrainV1Notes difficulty150.Strains.[i].StrainV1Notes),
+            chart
+        )
 
 module Metrics =
 

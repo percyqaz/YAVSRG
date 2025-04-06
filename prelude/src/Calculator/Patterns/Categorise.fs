@@ -6,7 +6,7 @@ module Categorise =
 
     let SV_AMOUNT_THRESHOLD = 2000.0f<ms>
 
-    let categorise_chart (keys: int, ordered_clusters: Cluster array, sv_amount: Time) : string =
+    let categorise_chart (keys: int, ordered_clusters: Cluster<'D> array, sv_amount: Time) : string =
 
         if ordered_clusters.Length = 0 then
             if sv_amount >= SV_AMOUNT_THRESHOLD then "SV" else "Uncategorised"
@@ -26,7 +26,7 @@ module Categorise =
             | Some { Pattern = Chordstream } when cluster_1.Pattern = Jacks -> true
             | _ -> false
 
-        let is_tech = cluster_1.Mixed
+        let is_tech = cluster_1.Type.IsMixed
 
         let is_sv = sv_amount >= SV_AMOUNT_THRESHOLD
 
