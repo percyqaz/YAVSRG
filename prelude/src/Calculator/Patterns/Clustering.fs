@@ -121,18 +121,20 @@ type Cluster<'D> =
 module private Clustering =
 
     let BPM_CLUSTER_THRESHOLD = 5.0f<ms / beat>
+    let PATTERN_TIME_THRESHOLD = 1000.0f<ms>
 
-    let private pattern_amount (sorted_starts_ends: (Time * Time) array) : Time =
+    let private pattern_amount (sorted_times: Time array) : Time =
 
         let mutable total_time: Time = 0.0f<ms>
 
-        let a, b = Array.head sorted_starts_ends
+        let a = Array.head sorted_times
 
         let mutable current_start = a
-        let mutable current_end = b
+        let mutable current_end = a + PATTERN_TIME_THRESHOLD
 
-        for start, _end in sorted_starts_ends do
-            if current_end < _end then
+        for start in sorted_times do
+            let _end = start + PATTERN_TIME_THRESHOLD
+            if current_end < start then
                 total_time <- total_time + (current_end - current_start)
 
                 current_start <- start
@@ -140,7 +142,7 @@ module private Clustering =
             else
                 current_end <- max current_end _end
 
-        total_time <- total_time +  (current_end - current_start)
+        total_time <- total_time + (current_end - current_start)
 
         total_time
 
@@ -207,7 +209,7 @@ module private Clustering =
             pattern.Pattern, pattern.Mixed, c.Value
         )
         |> Array.map (fun ((pattern, mixed, bpm), data) ->
-            let starts_ends = data |> Array.map (fun (m, _) -> m.Start, m.End)
+            let times = data |> Array.map (fst >> _.Time)
             let densities = data |> Array.map (fst >> _.Density) |> Array.sort
             let varieties = data |> Array.map (fst >> _.Variety) |> Array.sort
             let hold_coverages = data |> Array.map (fst >> _.HoldCoverage) |> Array.sort
@@ -232,7 +234,7 @@ module private Clustering =
                 Variety = Percentiles.create varieties
                 Density = Percentiles.create densities
 
-                Amount = pattern_amount starts_ends
+                Amount = pattern_amount times
             }
         )
 
@@ -244,7 +246,7 @@ module private Clustering =
 
         if data.Length = 0 then None else
 
-        let starts_ends = data |> Array.map (fun (m, _) -> m.Start, m.End)
+        let times = data |> Array.map (fst >> _.Time)
         let densities = data |> Array.map (fst >> _.Density) |> Array.sort
         let varieties = data |> Array.map (fst >> _.Variety) |> Array.sort
         let hold_coverages = data |> Array.map (fst >> _.HoldCoverage) |> Array.sort
@@ -271,7 +273,7 @@ module private Clustering =
             Variety = Percentiles.create varieties
             Density = Percentiles.create densities
 
-            Amount = pattern_amount starts_ends
+            Amount = pattern_amount times
         }
 
     let get_clusters_rate (patterns: FoundPattern<float32> array) : Cluster<float32> array =
