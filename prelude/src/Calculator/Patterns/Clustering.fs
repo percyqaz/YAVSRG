@@ -30,6 +30,7 @@ type Cluster =
         BPM: int<beat / minute / rate>
         Mixed: bool
 
+        // todo: gonna need a Rating100 and Rating150
         Rating: float32
 
         Density10: Density
@@ -60,7 +61,7 @@ type Cluster =
         }
 
     member this.Importance =
-        this.Amount * this.Pattern.RatingMultiplier * float32 this.BPM
+        this.Amount * this.Pattern.DensityToBPM * this.Density50 * (if this.BPM > 0<beat / minute / rate> then 1.0f else 0.5f)
 
     member this.Format (rate: Rate) =
 
@@ -198,11 +199,13 @@ module private Clustering =
             }
         )
 
-    let core_pattern_cluster (pattern_type: CorePattern) (patterns_with_clusters: (FoundPattern * ClusterBuilder) array) : Cluster =
+    let core_pattern_cluster (pattern_type: CorePattern) (patterns_with_clusters: (FoundPattern * ClusterBuilder) array) : Cluster option =
 
         let data =
             patterns_with_clusters
             |> Array.filter (fun (pattern, _) -> pattern.Pattern = pattern_type)
+
+        if data.Length = 0 then None else
 
         let starts_ends = data |> Array.map (fun (m, _) -> m.Start, m.End)
         let densities = data |> Array.map (fst >> _.Density) |> Array.sort
@@ -216,7 +219,7 @@ module private Clustering =
             |> Seq.sortByDescending snd
             |> List.ofSeq
 
-        {
+        Some {
             Pattern = pattern_type
             SpecificTypes = specific_types
             // todo: type ClusterType = | Normal of bpm: int | Mixed of bpm: int | Combined
@@ -236,9 +239,16 @@ module private Clustering =
 
     let calculate_clustered_patterns (patterns: FoundPattern array) : Cluster array =
         let patterns_with_clusters = assign_clusters patterns
+        specific_clusters patterns_with_clusters
+
+    let calculate_clustered_patterns_v2 (patterns: FoundPattern array) : Cluster array =
+        let patterns_with_clusters = assign_clusters patterns
         let specific_clusters = specific_clusters patterns_with_clusters
-        specific_clusters
-        //let core_patterns =
-        //    [| Jacks; Chordstream; Stream; |]
-        //    |> Array.map (fun pattern_type -> core_pattern_cluster pattern_type patterns_with_clusters)
-        //Array.append specific_clusters core_patterns
+
+        seq {
+            yield! specific_clusters |> Seq.where (fun x -> x.BPM > 25<beat / minute / rate>)
+            yield! core_pattern_cluster Jacks patterns_with_clusters |> Option.toList
+            yield! core_pattern_cluster Chordstream patterns_with_clusters |> Option.toList
+            yield! core_pattern_cluster Stream patterns_with_clusters |> Option.toList
+        }
+        |> Array.ofSeq
