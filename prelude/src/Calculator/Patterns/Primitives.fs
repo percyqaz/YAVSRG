@@ -24,12 +24,12 @@ type RowInfo =
         Roll: bool
         Density: Density
         Variety: float32
+        HoldCoverage: float32
         Strains: float32 array
-        // todo: some kind of LN coverage metric
         RawNotes: int array
     }
 
-module Primitives =
+module internal Primitives =
 
     let detect_direction (previous_row: int array) (current_row: int array) : Direction * bool =
         assert (previous_row.Length > 0)
@@ -64,7 +64,7 @@ module Primitives =
         let is_roll = pleftmost > crightmost || prightmost < cleftmost
         direction, is_roll
 
-    let calculate (density: Density array, difficulty_info: Difficulty, chart: Chart) : RowInfo list =
+    let calculate (density: Density array, hold_coverage: float32 array, difficulty_info: Difficulty, chart: Chart) : RowInfo list =
 
         let { Time = first_note; Data = row } = (TimeArray.first chart.Notes).Value
 
@@ -104,6 +104,7 @@ module Primitives =
                             Direction = direction
                             Roll = is_roll
                             Density = density.[index]
+                            HoldCoverage = hold_coverage.[index]
                             Variety = difficulty_info.Variety.[index]
                             Strains = difficulty_info.Strains.[index].StrainV1Notes
                             RawNotes = current_row
