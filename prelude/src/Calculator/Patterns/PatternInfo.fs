@@ -59,11 +59,24 @@ module PatternInfo =
     let from_chart_uncached (rate: Rate, chart: Chart) : PatternInfo =
         let difficulty = Difficulty.calculate (rate, chart.Notes)
         let density = Density.process_chart chart
-        let patterns = Patterns.find (density, difficulty, chart)
+        let hold_coverage = HoldCoverage.calculate_coverage (chart.Keys, chart.Notes, rate)
+        let patterns = Patterns.find (density, hold_coverage, difficulty, chart)
 
         let clusters =
-            Clustering.calculate_clustered_patterns patterns
+            Clustering.calculate_clustered_patterns_v2 patterns
             |> Array.filter (fun c -> c.BPM > 25<beat / minute / rate>)
+
+        let three_most_important =
+            clusters
+            |> Seq.sortByDescending (fun c -> c.Importance)
+            |> Seq.take 3
+
+        let three_hardest =
+            clusters
+            |> Seq.sortByDescending (fun c -> c.Rating)
+            |> Seq.take 3
+
+        let main_clusters = Seq.concat [three_most_important; three_hardest] |> Seq.distinct
 
         let sv_amount = Metrics.sv_time chart
         let sorted_densities = density |> Array.sort
@@ -82,7 +95,6 @@ module PatternInfo =
             Density50 = Clustering.find_percentile 0.5f sorted_densities
             Density75 = Clustering.find_percentile 0.75f sorted_densities
             Density90 = Clustering.find_percentile 0.9f sorted_densities
-
         }
 
     let from_chart = from_chart_uncached |> cached

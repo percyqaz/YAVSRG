@@ -16,7 +16,7 @@ type FoundPattern =
         Density: float32</rate>
     }
 
-module Patterns =
+module internal Patterns =
 
     let private PATTERN_STABILITY_THRESHOLD = 5.0f<ms/beat>
     let private matches (specific_patterns: SpecificPatterns) (last_note: Time, primitives: RowInfo list) : FoundPattern array =
@@ -98,8 +98,8 @@ module Patterns =
 
         results.ToArray()
 
-    let find (density: Density array, difficulty_info: Difficulty, chart: Chart) : FoundPattern array =
-        let primitives = Primitives.calculate (density, difficulty_info, chart)
+    let find (density: Density array, hold_coverage: float32 array, difficulty_info: Difficulty, chart: Chart) : FoundPattern array =
+        let primitives = Primitives.calculate (density, hold_coverage, difficulty_info, chart)
 
         let keymode_patterns =
             if chart.Keys = 4 then

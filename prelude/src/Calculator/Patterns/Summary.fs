@@ -48,7 +48,8 @@ module PatternReport =
 
     let from_chart_uncached (difficulty_info: Difficulty, chart: Chart) : PatternReport =
         let density = Density.process_chart chart
-        let patterns = Patterns.find (density, difficulty_info, chart)
+        let hold_coverage = HoldCoverage.calculate_coverage (chart.Keys, chart.Notes, 1.0f<rate>)
+        let patterns = Patterns.find (density, hold_coverage, difficulty_info, chart)
         let clusters =
             Clustering.calculate_clustered_patterns patterns
             |> Seq.filter (fun c -> c.BPM > 25<beat / minute / rate>)
