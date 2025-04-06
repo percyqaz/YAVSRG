@@ -63,7 +63,7 @@ type Patterns(display: Setting<InfoPanelMode>) =
 
             Text.fill_b (
                 Style.font,
-                Icons.MUSIC + " " + (match entry.Type with ClusterType.Normal bpm -> sprintf "%i" bpm | ClusterType.Mixed bpm -> sprintf "~%i" bpm | ClusterType.Combined -> "?"),
+                Icons.MUSIC + " " + (match entry.Type with ClusterType.Normal bpm -> sprintf "%i" bpm | ClusterType.Mixed bpm -> sprintf "~%i" bpm | ClusterType.Combined (min, max) -> sprintf "%i-%i" min max),
                 b.ShrinkL(TEXT_WIDTH).ShrinkY(10.0f),
                 Colors.text,
                 Alignment.LEFT

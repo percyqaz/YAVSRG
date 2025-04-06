@@ -63,7 +63,7 @@ module Percentiles =
 type ClusterType =
     | Normal of bpm: int<beat / minute / rate>
     | Mixed of bpm: int<beat / minute / rate>
-    | Combined
+    | Combined of min_bpm: int<beat / minute / rate> * max_bpm: int<beat / minute / rate>
 
 [<Json.AutoCodec>]
 type Cluster<'D> =
@@ -81,14 +81,11 @@ type Cluster<'D> =
         Amount: Time
     }
 
-    member this.ShouldIgnore =
-        match this.BPM with Some i when i < 25<beat / minute / rate> -> true | _ -> false
-
-    member this.BPM : int<beat / minute / rate> option =
+    member this.BPM : int<beat / minute / rate> =
         match this.Type with
-        | ClusterType.Normal bpm -> Some bpm
-        | ClusterType.Mixed bpm -> Some bpm
-        | ClusterType.Combined -> None
+        | ClusterType.Normal bpm -> bpm
+        | ClusterType.Mixed bpm -> bpm
+        | ClusterType.Combined (_, bpm) -> bpm
 
     static member Default =
         {
@@ -105,22 +102,21 @@ type Cluster<'D> =
             Amount = 1.0f<ms>
         }
 
-    member this.Importance =
-        this.Amount * this.Pattern.DensityToBPM * this.Density.P50 * (match this.Type with ClusterType.Combined -> 0.5f | _ -> 1.0f)
+    member this.Importance : float32 =
+        this.Amount
+        * this.Pattern.DensityToBPM
+        * this.Density.P50
+        * (match this.Type with ClusterType.Combined _ -> 0.3f | _ -> 1.0f)
+        |> float32
 
-    member this.Format (rate: Rate) =
+    member this.Supersedes (other: Cluster<'D>) : bool =
+        if this.Pattern = other.Pattern then
 
-        let name =
-            match this.SpecificTypes with
-            | (t, amount) :: _ when amount > 0.4f -> t
-            | _ -> this.Pattern.ToString()
+            this.Type.IsCombined
+            || other.Type.IsCombined
+            || (this.Amount * 0.5f > other.Amount && this.BPM > other.BPM)
 
-        match this.Type with
-        | ClusterType.Normal bpm ->
-            sprintf "%.0fBPM %s" (float32 bpm * rate) name
-        | ClusterType.Mixed bpm ->
-            sprintf "~%.0fBPM Mixed %s" (float32 bpm * rate) name
-        | ClusterType.Combined -> name
+        else false
 
 module private Clustering =
 
@@ -253,6 +249,8 @@ module private Clustering =
         let varieties = data |> Array.map (fst >> _.Variety) |> Array.sort
         let hold_coverages = data |> Array.map (fst >> _.HoldCoverage) |> Array.sort
 
+        let bpms = data |> Seq.map (snd >> _.Value) |> Seq.distinct
+
         let data_count = float32 data.Length
         let specific_types =
             data
@@ -265,7 +263,7 @@ module private Clustering =
         Some {
             Pattern = pattern_type
             SpecificTypes = specific_types
-            Type = ClusterType.Combined
+            Type = ClusterType.Combined (Seq.min bpms, Seq.max bpms)
 
             Rating = data |> Seq.map (fst >> _.Strains) |> Seq.concat |> rate_difficulty
 
@@ -278,7 +276,15 @@ module private Clustering =
 
     let get_clusters_rate (patterns: FoundPattern<float32> array) : Cluster<float32> array =
         let patterns_with_clusters = assign_clusters patterns
-        specific_clusters (Seq.filter (fun x -> x > 0.0f) >> Difficulty.weighted_overall_difficulty, patterns_with_clusters)
+        let difficulties_to_rating = Seq.filter (fun x -> x > 0.0f) >> Difficulty.weighted_overall_difficulty
+
+        seq {
+            yield! specific_clusters (difficulties_to_rating, patterns_with_clusters)
+            yield! core_pattern_cluster (Jacks, difficulties_to_rating, patterns_with_clusters) |> Option.toList
+            yield! core_pattern_cluster (Chordstream, difficulties_to_rating, patterns_with_clusters) |> Option.toList
+            yield! core_pattern_cluster (Stream, difficulties_to_rating, patterns_with_clusters) |> Option.toList
+        }
+        |> Array.ofSeq
 
     let get_clusters_multirate (patterns: FoundPattern<float32 * float32> array) : Cluster<float32 * float32> array =
         let patterns_with_clusters = assign_clusters patterns
@@ -291,16 +297,36 @@ module private Clustering =
             Difficulty.weighted_overall_difficulty (Seq.map fst values),
             Difficulty.weighted_overall_difficulty (Seq.map snd values)
 
-        specific_clusters (difficulties_to_ratings, patterns_with_clusters)
+        seq {
+            yield! specific_clusters (difficulties_to_ratings, patterns_with_clusters)
+            yield! core_pattern_cluster (Jacks, difficulties_to_ratings, patterns_with_clusters) |> Option.toList
+            yield! core_pattern_cluster (Chordstream, difficulties_to_ratings, patterns_with_clusters) |> Option.toList
+            yield! core_pattern_cluster (Stream, difficulties_to_ratings, patterns_with_clusters) |> Option.toList
+        }
+        |> Array.ofSeq
 
-    //let calculate_clustered_patterns_v2 (patterns: FoundPattern<'D> array) : Cluster<'D> array =
-    //    let patterns_with_clusters = assign_clusters patterns
-    //    let specific_clusters = specific_clusters patterns_with_clusters
+    let most_important (min_bpm: int<beat / minute / rate>, clusters: Cluster<'D> array) : Cluster<'D> seq =
+        let mutable remaining =
+            clusters
+            |> Seq.where (fun c -> c.BPM >= min_bpm && c.BPM <= 600<beat / minute / rate>)
+            |> Seq.sortByDescending (fun c -> c.Importance)
+            |> List.ofSeq
 
-    //    seq {
-    //        yield! specific_clusters |> Seq.where (fun x -> x.BPM > 25<beat / minute / rate>)
-    //        yield! core_pattern_cluster Jacks patterns_with_clusters |> Option.toList
-    //        yield! core_pattern_cluster Chordstream patterns_with_clusters |> Option.toList
-    //        yield! core_pattern_cluster Stream patterns_with_clusters |> Option.toList
-    //    }
-    //    |> Array.ofSeq
+        let next () =
+            match remaining with
+            | [] -> None
+            | x :: xs ->
+                remaining <- xs |> List.filter (fun c -> not (x.Supersedes c))
+                Some x
+
+        seq {
+            match next() with Some x -> yield x | None -> ()
+            match next() with Some x -> yield x | None -> ()
+            match next() with Some x -> yield x | None -> ()
+
+            remaining <- remaining |> List.sortByDescending (fun c -> c.Rating)
+
+            match next() with Some x -> yield x | None -> ()
+            match next() with Some x -> yield x | None -> ()
+            match next() with Some x -> yield x | None -> ()
+        }
