@@ -2,9 +2,8 @@
 
 open Prelude
 open Prelude.Charts
-open Prelude.Calculator
 
-type FoundPattern =
+type FoundPattern<'D> =
     {
         Pattern: CorePattern
         SpecificType: string option
@@ -12,14 +11,17 @@ type FoundPattern =
         Start: Time
         End: Time
         MsPerBeat: float32<ms/beat>
-        Strains: float32 array
+        Variety: float32
+        Strains: 'D array
+        HoldCoverage: float32
         Density: float32</rate>
     }
 
 module internal Patterns =
 
     let private PATTERN_STABILITY_THRESHOLD = 5.0f<ms/beat>
-    let private matches (specific_patterns: SpecificPatterns) (last_note: Time, primitives: RowInfo list) : FoundPattern array =
+
+    let private matches (specific_patterns: SpecificPatterns<'D>) (last_note: Time, primitives: RowInfo<'D> list) : FoundPattern<'D> array =
         let mutable remaining_data = primitives
 
         let results = ResizeArray()
@@ -43,7 +45,9 @@ module internal Patterns =
                     Start = remaining_data.Head.Time
                     End = remaining_data |> List.skip n |> List.tryHead |> function None -> last_note | Some r -> r.Time
                     MsPerBeat = mean_mspb
+                    Variety = d |> List.averageBy _.Variety
                     Strains = remaining_data.Head.Strains
+                    HoldCoverage = d |> List.averageBy _.HoldCoverage
                     Density = d |> List.averageBy _.Density
                 }
 
@@ -65,7 +69,9 @@ module internal Patterns =
                     Start = remaining_data.Head.Time
                     End = remaining_data |> List.skip n |> List.tryHead |> function None -> last_note | Some r -> r.Time
                     MsPerBeat = mean_mspb
+                    Variety = d |> List.averageBy _.Variety
                     Strains = remaining_data.Head.Strains
+                    HoldCoverage = d |> List.averageBy _.HoldCoverage
                     Density = d |> List.averageBy _.Density
                 }
 
@@ -90,7 +96,9 @@ module internal Patterns =
                             (remaining_data.Head.Time + remaining_data.Head.MsPerBeat * 0.5f<beat>)
                             (remaining_data |> List.skip n |> List.tryHead |> function None -> last_note | Some r -> r.Time)
                     MsPerBeat = mean_mspb
+                    Variety = d |> List.averageBy _.Variety
                     Strains = remaining_data.Head.Strains
+                    HoldCoverage = d |> List.averageBy _.HoldCoverage
                     Density = d |> List.averageBy _.Density
                 }
 
@@ -98,15 +106,18 @@ module internal Patterns =
 
         results.ToArray()
 
-    let find (density: Density array, hold_coverage: float32 array, difficulty_info: Difficulty, chart: Chart) : FoundPattern array =
-        let primitives = Primitives.calculate (density, hold_coverage, difficulty_info, chart)
+    let keymode_patterns<'D> (keymode: int) : SpecificPatterns<'D> =
+        if keymode = 4 then
+            SpecificPatterns.SPECIFIC_4K
+        elif keymode = 7 then
+            SpecificPatterns.SPECIFIC_7K
+        else
+            SpecificPatterns.SPECIFIC_OTHER
 
-        let keymode_patterns =
-            if chart.Keys = 4 then
-                SpecificPatterns.SPECIFIC_4K
-            elif chart.Keys = 7 then
-                SpecificPatterns.SPECIFIC_7K
-            else
-                SpecificPatterns.SPECIFIC_OTHER
+    let find_rate (chart: Chart, rate: Rate) : FoundPattern<float32> array =
+        let primitives = Primitives.calculate_rate (chart, rate)
+        matches (keymode_patterns chart.Keys) (chart.LastNote, primitives)
 
-        matches keymode_patterns (chart.LastNote, primitives)
+    let find_multirate (chart: Chart) : FoundPattern<float32 * float32> array =
+        let primitives = Primitives.calculate_multirate (chart)
+        matches (keymode_patterns chart.Keys) (chart.LastNote, primitives)
