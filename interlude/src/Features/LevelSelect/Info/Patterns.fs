@@ -16,8 +16,8 @@ type Patterns(display: Setting<InfoPanelMode>) =
     let mutable category: string = ""
 
     let on_chart_update(info: LoadedChartInfo) =
-        patterns <- info.Patterns.MainPatterns |> Array.truncate 6
-        category <- "nyi"//info.Patterns.Category
+        patterns <- info.Patterns.MainPatterns
+        category <- sprintf "%.2f%% S | %.2f%% P" (info.Patterns.Simplicity * 100.0f) (info.Patterns.Purity * 100.0f)
 
     override this.Init(parent: Widget) =
         base.Init parent
@@ -86,3 +86,5 @@ type Patterns(display: Setting<InfoPanelMode>) =
             )
 
             b <- b.Translate(0.0f, 65.0f)
+
+        Text.fill_b (Style.font, category, this.Bounds.SliceB(60.0f), Colors.text, Alignment.CENTER)

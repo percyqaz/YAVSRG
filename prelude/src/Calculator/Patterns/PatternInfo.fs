@@ -54,10 +54,31 @@ module PatternInfo =
         let clusters =
             Clustering.get_clusters_rate patterns
 
+        let pattern_amount (pattern_type: CorePattern) =
+            clusters
+            |> Seq.tryFind (fun c -> c.Pattern = pattern_type && c.Type.IsCombined)
+            |> Option.map _.Amount
+            |> Option.defaultValue 0.0f<ms>
+
+        let duration = chart.LastNote - chart.FirstNote
+        let jacks = pattern_amount Jacks
+        let chordstream = pattern_amount Chordstream
+        let stream = pattern_amount Stream
+        let purity =
+            let total = jacks + chordstream + stream |> max duration
+            let p = Seq.max [| jacks / total; chordstream / total; stream / total |]
+            (p - (1.0f / 3.0f)) * 1.5f |> min 1.0f |> max 0.0f
+
         let main_clusters =
             Clustering.most_important(75<_>, clusters)
             |> Seq.map PatternCluster.OfCluster
             |> Seq.toArray
+
+        let complexity =
+            if main_clusters.Length = 0 then 0.0f
+            else
+                let v = main_clusters |> Seq.averageBy (_.Variety.P50)
+                (v - 5.0f) / 15.0f |> min 1.0f |> max 0.0f
 
         let sv_amount = Metrics.sv_time chart
 
@@ -69,8 +90,8 @@ module PatternInfo =
 
             MainPatterns = main_clusters
             HoldNotePercent = Metrics.ln_percent chart
-            Purity = 0.0f
-            Simplicity = 0.0f
+            Purity = purity
+            Simplicity = 1.0f - complexity
         }
 
     let from_chart = from_chart_uncached |> cached
