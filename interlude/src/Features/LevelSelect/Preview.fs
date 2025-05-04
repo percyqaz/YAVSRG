@@ -23,7 +23,9 @@ type Preview(info: LoadedChartInfo, change_rate: Rate -> unit) as this =
     let mutable timeline = Timeline(info.WithMods, Song.seek, SelectedChart.rate)
 
     let mutable difficulty_overlay = DifficultyOverlay(info.WithMods, playfield, info.Difficulty, playstate)
+    let mutable patterns_overlay = PatternsOverlay(info.WithMods, playfield, info.Patterns, playstate)
     let mutable show_difficulty_overlay = false
+    let mutable show_patterns_overlay = false
 
     let change_chart_listener =
         SelectedChart.on_chart_change_finished.Subscribe(fun info ->
@@ -32,9 +34,11 @@ type Preview(info: LoadedChartInfo, change_rate: Rate -> unit) as this =
             recreate_scoring <- _recreate_scoring
             playfield <- Playfield(info.WithColors, playstate, Content.NoteskinConfig, false).With(LanecoverOverReceptors())
             difficulty_overlay <- DifficultyOverlay(info.WithMods, playfield, info.Difficulty, playstate)
+            patterns_overlay <- PatternsOverlay(info.WithMods, playfield, info.Patterns, playstate)
             timeline <- Timeline(info.WithMods, Song.seek, SelectedChart.rate)
             if this.Initialised then
                 difficulty_overlay.Init this
+                patterns_overlay.Init this
                 playfield.Init this
                 timeline.Init this
         )
@@ -48,12 +52,14 @@ type Preview(info: LoadedChartInfo, change_rate: Rate -> unit) as this =
         base.Init parent
         playfield.Init this
         difficulty_overlay.Init this
+        patterns_overlay.Init this
         timeline.Init this
         volume.Init this
 
     override this.Draw() =
         playfield.Draw()
         if show_difficulty_overlay then difficulty_overlay.Draw()
+        if show_patterns_overlay then patterns_overlay.Draw()
         timeline.Draw()
         volume.Draw()
 
@@ -62,6 +68,7 @@ type Preview(info: LoadedChartInfo, change_rate: Rate -> unit) as this =
         volume.Update(elapsed_ms, moved)
         timeline.Update(elapsed_ms, moved)
         if show_difficulty_overlay then difficulty_overlay.Update(elapsed_ms, moved)
+        if show_patterns_overlay then patterns_overlay.Update(elapsed_ms, moved)
         playfield.Update(elapsed_ms, moved)
 
         if Song.playing() then
@@ -88,6 +95,10 @@ type Preview(info: LoadedChartInfo, change_rate: Rate -> unit) as this =
             Tree.previous()
         elif (%%"difficulty_overlay").Pressed() then
             show_difficulty_overlay <- not show_difficulty_overlay
+            show_patterns_overlay <- false
+        elif (%%"patterns_overlay").Pressed() then
+            show_patterns_overlay <- not show_patterns_overlay
+            show_difficulty_overlay <- false
         elif (%%"pause").Pressed() || (%%"pause_music").Pressed() then
             if Song.playing () then
                 (if Song.time () > 0.0f<ms> then Song.pause ())
