@@ -6,12 +6,12 @@ open Percyqaz.Flux.Windowing
 open Percyqaz.Flux.UI
 open Prelude
 open Prelude.Mods
-open Prelude.Calculator
+open Prelude.Calculator.Patterns
 open Interlude.Options
 open Interlude.Features.Gameplay
 open Interlude.Features.Play
 
-type PatternsOverlay(chart: ModdedChart, playfield: Playfield, patterns: Patterns.PatternInfo, state: PlayState) =
+type PatternsOverlay(chart: ModdedChart, playfield: Playfield, patterns: PatternInfo, state: PlayState) =
     inherit StaticWidget(NodeType.None)
 
     let mutable segment_seek = 0
@@ -23,27 +23,27 @@ type PatternsOverlay(chart: ModdedChart, playfield: Playfield, patterns: Pattern
         else
             fun bottom -> fun x -> bottom - x
 
-    let draw_segment (now: Time, t_start: Time, t_end: Time, s_type: Patterns.SegmentType) =
+    let draw_segment (now: Time, t_start: Time, t_end: Time, s_type: SegmentType) =
         let a =
             options.HitPosition.Value
             + (t_start - now) * (options.ScrollSpeed.Value / SelectedChart.rate.Value)
-            + playfield.ColumnWidth * 0.5f - 10.0f
+            + playfield.ColumnWidth * 0.5f + 5.0f
             |> scroll_direction_pos playfield.Bounds.Bottom
 
         let b =
             options.HitPosition.Value
             + (t_end - now) * (options.ScrollSpeed.Value / SelectedChart.rate.Value)
-            + playfield.ColumnWidth * 0.5f + 10.0f
+            + playfield.ColumnWidth * 0.5f - 5.0f
             |> scroll_direction_pos playfield.Bounds.Bottom
 
         let segment_area = Rect.FromEdges(playfield.Bounds.Left - 40.0f, a, playfield.Bounds.Left - 10.0f, b)
 
         let color =
             match s_type with
-            | Patterns.SegmentType.Jacks _ -> Colors.red_accent
-            | Patterns.SegmentType.Chordstream _ -> Colors.green_accent
-            | Patterns.SegmentType.Stream _ -> Colors.cyan_accent
-            | Patterns.SegmentType.Uncategorized -> Colors.yellow_accent
+            | SegmentType.Jacks _ -> Colors.red_accent
+            | SegmentType.Chordstream _ -> Colors.green_accent
+            | SegmentType.Stream _ -> Colors.cyan_accent
+            | SegmentType.Uncategorized -> Colors.yellow_accent
 
         Render.rect segment_area color.O3
 
