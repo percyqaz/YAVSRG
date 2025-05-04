@@ -139,8 +139,9 @@ module CorePatternParser =
         }
 
     let make_segment (rows: RowInfo<'D> list, core_type: CorePatternType) : Segment<'D> =
-        let bpm = rows |> Seq.last |> fun r -> r.BPM.Value
-        let t_start = rows |> Seq.last |> fun r -> r.Time
+        let last = rows |> Seq.last
+        let bpm = last.BPM.Value
+        let t_start = last.Time - last.MsPerBeat / 4.0f</beat>
         let t_end = rows |> Seq.head |> fun r -> r.Time
 
         match core_type with
