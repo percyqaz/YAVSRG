@@ -27,12 +27,13 @@ type PatternsOverlay(chart: ModdedChart, playfield: Playfield, patterns: Pattern
         let a =
             options.HitPosition.Value
             + (t_start - now) * (options.ScrollSpeed.Value / SelectedChart.rate.Value)
+            + playfield.ColumnWidth * 0.5f - 10.0f
             |> scroll_direction_pos playfield.Bounds.Bottom
 
         let b =
             options.HitPosition.Value
             + (t_end - now) * (options.ScrollSpeed.Value / SelectedChart.rate.Value)
-            + playfield.ColumnWidth
+            + playfield.ColumnWidth * 0.5f + 10.0f
             |> scroll_direction_pos playfield.Bounds.Bottom
 
         let segment_area = Rect.FromEdges(playfield.Bounds.Left - 40.0f, a, playfield.Bounds.Left - 10.0f, b)
