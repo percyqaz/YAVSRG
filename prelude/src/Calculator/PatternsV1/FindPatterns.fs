@@ -107,9 +107,9 @@ module internal Patterns =
         else
             SpecificPatterns.SPECIFIC_OTHER
 
-    let find_rate (chart: Chart, rate: Rate) : FoundPattern<float32> array =
+    let find_rate (chart: Chart, rate: Rate) : FoundPattern<float32> array * RowInfo<float32> list =
         let primitives = Primitives.calculate_rate (chart, rate)
-        matches (keymode_patterns chart.Keys) (chart.LastNote, primitives)
+        matches (keymode_patterns chart.Keys) (chart.LastNote, primitives), primitives
 
     let find_multirate (chart: Chart) : FoundPattern<float32 * float32> array =
         let primitives = Primitives.calculate_multirate (chart)

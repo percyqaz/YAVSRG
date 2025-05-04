@@ -43,13 +43,16 @@ type PatternInfo =
         MainPatterns: PatternCluster array
         Purity: float32
         Simplicity: float32
+
+        Primitives: RowInfo<float32> list
+        Segments: Segment<float32> array
     }
 
 module PatternInfo =
 
     let from_chart_uncached (rate: Rate, chart: Chart) : PatternInfo =
         let difficulty = Difficulty.calculate (rate, chart.Notes)
-        let patterns = Patterns.find_rate (chart, rate)
+        let patterns, primitives = Patterns.find_rate (chart, rate)
 
         let clusters =
             Clustering.get_clusters_rate patterns
@@ -92,6 +95,9 @@ module PatternInfo =
             HoldNotePercent = Metrics.ln_percent chart
             Purity = purity
             Simplicity = 1.0f - complexity
+
+            Primitives = primitives
+            Segments = CorePatternParser.parse primitives |> Seq.map CorePatternParser.make_segment |> Array.ofSeq
         }
 
     let from_chart = from_chart_uncached |> cached
