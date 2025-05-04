@@ -26,15 +26,15 @@ module CorePatternParser =
     | Jacks
     | Uncategorized
 
-    [<Literal>]
-    let MIN_JACK_BPM = 60<beat / minute / rate>
-    [<Literal>]
-    let JACK_FORGIVENESS_COUNT = 2
+    let [<Literal>] MIN_JACK_BPM = 60<beat / minute / rate>
+    let [<Literal>] JACK_FORGIVENESS_COUNT = 2
+    /// Number of notes in 4 chords that counts as chordstream over stream
+    /// e.g. 2-1-1-1 adds up to 5 and is stream, 3-1-1-1 and 2-1-1-2 are chordstream
+    let [<Literal>] CHORDSTREAM_THRESHOLD = 6
 
     let internal detect_jacks (rows: RowInfo<'D> list) : RowInfo<'D> list * RowInfo<'D> list =
 
         match rows with
-        | [] -> [], []
         | r :: rs when r.Jacks > 0 && r.BPM.Value > MIN_JACK_BPM ->
             let bpm = r.BPM.Value
 
@@ -48,26 +48,93 @@ module CorePatternParser =
 
             loop JACK_FORGIVENESS_COUNT [r] rs
 
-        | r :: rs -> [], r :: rs
+        | otherwise -> [], otherwise
+
+    let internal detect_chordstream (rows: RowInfo<'D> list) : RowInfo<'D> list * RowInfo<'D> list =
+        match rows with
+        | a :: b :: c :: d :: rs
+            when
+                b.Jacks = 0 && c.Jacks = 0 && d.Jacks = 0
+                && b.BPM.Value = a.BPM.Value && c.BPM.Value = a.BPM.Value && d.BPM.Value = a.BPM.Value
+                && a.Notes + b.Notes + c.Notes + d.Notes >= CHORDSTREAM_THRESHOLD
+            ->
+            let bpm = a.BPM.Value
+            let rec loop (n1: int, n2: int, n3: int) (matched: RowInfo<'D> list) (remaining: RowInfo<'D> list) : RowInfo<'D> list * RowInfo<'D> list =
+                match remaining with
+                | r :: rs when
+                    r.Notes > 0
+                    && r.Jacks = 0
+                    && r.BPM.Value = bpm
+                    && r.Notes + n1 + n2 + n3 >= CHORDSTREAM_THRESHOLD
+                    ->
+                    loop (r.Notes, n1, n2) (r :: matched) rs
+                | remaining -> matched, remaining
+            loop (d.Notes, c.Notes, b.Notes) [d; c; b; a] rs
+
+        | otherwise -> [], otherwise
+
+    let internal detect_stream (rows: RowInfo<'D> list) : RowInfo<'D> list * RowInfo<'D> list =
+        match rows with
+        | a :: b :: c :: d :: rs
+            when
+                b.Jacks = 0 && c.Jacks = 0 && d.Jacks = 0
+                && b.BPM.Value = a.BPM.Value && c.BPM.Value = a.BPM.Value && d.BPM.Value = a.BPM.Value
+                && a.Notes + b.Notes + c.Notes + d.Notes < CHORDSTREAM_THRESHOLD
+            ->
+            let bpm = a.BPM.Value
+            let rec loop (n1: int, n2: int, n3: int) (matched: RowInfo<'D> list) (remaining: RowInfo<'D> list) : RowInfo<'D> list * RowInfo<'D> list =
+                match remaining with
+                | r :: rs when
+                    r.Notes > 0
+                    && r.Jacks = 0
+                    && r.BPM.Value = bpm
+                    && r.Notes + n1 + n2 + n3 < CHORDSTREAM_THRESHOLD
+                    ->
+                    loop (r.Notes, n1, n2) (r :: matched) rs
+                | remaining -> matched, remaining
+            loop (d.Notes, c.Notes, b.Notes) [d; c; b; a] rs
+
+        | otherwise -> [], otherwise
 
     let parse (rows: RowInfo<'D> list) : (RowInfo<'D> list * CorePatternType) seq =
 
         let mutable uncategorized = []
         seq {
             let mutable remaining = rows
-            while remaining.Length > 0 do
-                let matched, rest = detect_jacks remaining
+            while not (List.isEmpty remaining) do
+                let j_matched, rest = detect_jacks remaining
                 remaining <- rest
-                if matched.Length > 0 then
-                    if uncategorized.Length > 0 then
+                if not (List.isEmpty j_matched) then
+                    if not (List.isEmpty uncategorized) then
                         yield uncategorized, CorePatternType.Uncategorized
                         uncategorized <- []
-                    yield matched, CorePatternType.Jacks
+                    yield j_matched, CorePatternType.Jacks
+                else
+
+                let cs_matched, rest = detect_chordstream remaining
+                remaining <- rest
+
+                if not (List.isEmpty cs_matched) then
+                    if not (List.isEmpty uncategorized) then
+                        yield uncategorized, CorePatternType.Uncategorized
+                        uncategorized <- []
+                    yield cs_matched, CorePatternType.Chordstream
+                else
+
+                let s_matched, rest = detect_stream remaining
+                remaining <- rest
+
+                if not (List.isEmpty s_matched) then
+                    if not (List.isEmpty uncategorized) then
+                        yield uncategorized, CorePatternType.Uncategorized
+                        uncategorized <- []
+                    yield s_matched, CorePatternType.Stream
+
                 else
                     uncategorized <- List.head remaining :: uncategorized
                     remaining <- List.tail remaining
 
-            if uncategorized.Length > 0 then
+            if not (List.isEmpty uncategorized) then
                 yield uncategorized, CorePatternType.Uncategorized
         }
 
