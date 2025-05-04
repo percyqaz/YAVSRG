@@ -5,6 +5,23 @@ open Prelude
 open Prelude.Charts
 open Prelude.Calculator
 
+type BPMCluster =
+    internal {
+        mutable SumMs: float32<ms / beat>
+        OriginalMsPerBeat: float32<ms / beat>
+        mutable Count: int
+        mutable BPM: int<beat / minute / rate> option
+    }
+    member internal this.Add value =
+        this.Count <- this.Count + 1
+        this.SumMs <- this.SumMs + value
+
+    member internal this.Calculate() =
+        let average = this.SumMs / float32 this.Count
+        this.BPM <- 60000.0f<ms / minute> / average |> float32 |> round |> int |> fun x -> x * 1<beat / minute / rate> |> Some
+
+    member this.Value = this.BPM.Value
+
 [<RequireQualifiedAccess>]
 type Direction =
     | None
@@ -18,6 +35,7 @@ type RowInfo<'D> =
         Index: int
         Time: Time
         MsPerBeat: float32<ms / beat>
+        BPM: BPMCluster
         Notes: int
         Jacks: int
         Direction: Direction
@@ -64,8 +82,30 @@ module internal Primitives =
         let is_roll = pleftmost > crightmost || prightmost < cleftmost
         direction, is_roll
 
+    [<Literal>]
+    let private BPM_CLUSTER_THRESHOLD = 5.0f<ms / beat>
+
+    let private assign_cluster (bpms: ResizeArray<BPMCluster>, ms_per_beat: float32<ms / beat>) : BPMCluster =
+        match
+            bpms |> Seq.tryFind (fun c -> abs (c.OriginalMsPerBeat - ms_per_beat) < BPM_CLUSTER_THRESHOLD)
+        with
+        | Some existing_cluster ->
+            existing_cluster.Add ms_per_beat
+            existing_cluster
+        | None ->
+            let new_cluster =
+                {
+                    Count = 1
+                    SumMs = ms_per_beat
+                    OriginalMsPerBeat = ms_per_beat
+                    BPM = None
+                }
+            bpms.Add new_cluster
+            new_cluster
+
     let private calculate (density: Density array, hold_coverage: float32 array, get_variety: int -> float32, get_strains: int -> 'D array, chart: Chart) : RowInfo<'D> list =
 
+        let bpms = ResizeArray<BPMCluster>()
         let { Time = first_note; Data = row } = (TimeArray.first chart.Notes).Value
 
         let mutable previous_row =
@@ -81,39 +121,44 @@ module internal Primitives =
         let mutable previous_time = first_note
         let mutable index = 0
 
-        seq {
-            for { Time = t; Data = row } in (chart.Notes |> Seq.skip 1) do
-                index <- index + 1
+        let results =
+            seq {
+                for { Time = t; Data = row } in (chart.Notes |> Seq.skip 1) do
+                    index <- index + 1
 
-                let current_row =
-                    seq { 0 .. chart.Keys - 1 }
-                    |> Seq.filter (fun k -> row.[k] = NoteType.NORMAL || row.[k] = NoteType.HOLDHEAD)
-                    |> Array.ofSeq
+                    let current_row =
+                        seq { 0 .. chart.Keys - 1 }
+                        |> Seq.filter (fun k -> row.[k] = NoteType.NORMAL || row.[k] = NoteType.HOLDHEAD)
+                        |> Array.ofSeq
 
-                if current_row.Length > 0 then
+                    if current_row.Length > 0 then
 
-                    let direction, is_roll = detect_direction previous_row current_row
+                        let direction, is_roll = detect_direction previous_row current_row
+                        let mspb = (t - previous_time) * 4.0f< / beat>
 
-                    yield
-                        {
-                            Index = index
-                            Time = (t - first_note)
-                            MsPerBeat = (t - previous_time) * 4.0f< / beat>
-                            Notes = current_row.Length
-                            Jacks = current_row.Length - (Array.except previous_row current_row).Length
-                            Direction = direction
-                            Roll = is_roll
-                            Density = density.[index]
-                            HoldCoverage = hold_coverage.[index]
-                            Variety = get_variety index
-                            Strains = get_strains index
-                            RawNotes = current_row
-                        }
+                        yield
+                            {
+                                Index = index
+                                Time = (t - first_note)
+                                MsPerBeat = mspb
+                                BPM = assign_cluster(bpms, mspb)
+                                Notes = current_row.Length
+                                Jacks = current_row.Length - (Array.except previous_row current_row).Length
+                                Direction = direction
+                                Roll = is_roll
+                                Density = density.[index]
+                                HoldCoverage = hold_coverage.[index]
+                                Variety = get_variety index
+                                Strains = get_strains index
+                                RawNotes = current_row
+                            }
 
-                    previous_row <- current_row
-                    previous_time <- t
-        }
-        |> List.ofSeq
+                        previous_row <- current_row
+                        previous_time <- t
+            }
+            |> List.ofSeq
+        bpms |> Seq.iter (fun c -> c.Calculate())
+        results
 
     let calculate_rate (chart: Chart, rate: Rate) : RowInfo<float32> list =
 

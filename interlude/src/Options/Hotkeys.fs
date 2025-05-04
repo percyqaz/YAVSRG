@@ -82,6 +82,7 @@ module Hotkeys =
         Hotkeys.register "reload_content" (Bind.Key(Keys.S, (true, true, true)))
         Hotkeys.register "graph_alt_info" (mk Keys.LeftShift)
         Hotkeys.register "difficulty_overlay" (mk Keys.F2)
+        Hotkeys.register "patterns_overlay" (mk Keys.F1)
 
         Hotkeys.register "skip" (mk Keys.Space)
         Hotkeys.register "pause" (mk Keys.Space)
