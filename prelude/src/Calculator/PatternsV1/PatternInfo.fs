@@ -50,6 +50,16 @@ type PatternInfo =
 
 module PatternInfo =
 
+    let groups (segments: Segment<float32> array) : SegmentGroup<float32> array =
+        segments
+        |> Seq.groupBy (fun s -> s.Type)
+        |> Seq.map (fun (t, segs) ->
+            let total = segs |> Seq.sumBy (fun s -> s.End - s.Start)
+            let rating = segs |> Seq.map _.Contents |> Seq.concat |> Seq.map _.Strains |> Seq.concat |> Seq.filter (fun x -> x > 0.0f) |> Difficulty.weighted_overall_difficulty
+            { Type = t; Total = total; Rating = rating })
+        |> Seq.sortByDescending _.Importance
+        |> Seq.toArray
+
     let from_chart_uncached (rate: Rate, chart: Chart) : PatternInfo =
         let difficulty = Difficulty.calculate (rate, chart.Notes)
         let patterns, primitives = Patterns.find_rate (chart, rate)
@@ -57,47 +67,27 @@ module PatternInfo =
         let clusters =
             Clustering.get_clusters_rate patterns
 
-        let pattern_amount (pattern_type: CorePattern) =
-            clusters
-            |> Seq.tryFind (fun c -> c.Pattern = pattern_type && c.Type.IsCombined)
-            |> Option.map _.Amount
-            |> Option.defaultValue 0.0f<ms>
-
-        let duration = chart.LastNote - chart.FirstNote
-        let jacks = pattern_amount Jacks
-        let chordstream = pattern_amount Chordstream
-        let stream = pattern_amount Stream
-        let purity =
-            let total = jacks + chordstream + stream |> max duration
-            let p = Seq.max [| jacks / total; chordstream / total; stream / total |]
-            (p - (1.0f / 3.0f)) * 1.5f |> min 1.0f |> max 0.0f
-
         let main_clusters =
             Clustering.most_important(75<_>, clusters)
             |> Seq.map PatternCluster.OfCluster
             |> Seq.toArray
 
-        let complexity =
-            if main_clusters.Length = 0 then 0.0f
-            else
-                let v = main_clusters |> Seq.averageBy (_.Variety.P50)
-                (v - 5.0f) / 15.0f |> min 1.0f |> max 0.0f
-
-        let sv_amount = Metrics.sv_time chart
+        let segments = CorePatternParser.parse primitives |> Seq.map CorePatternParser.make_segment |> Array.ofSeq
+        let groups = groups segments
 
         {
             Difficulty = difficulty.Overall
             Duration = chart.LastNote - chart.FirstNote
 
-            SVAmount = sv_amount
+            SVAmount = Metrics.sv_time chart
+            HoldNotePercent = Metrics.ln_percent chart
 
             MainPatterns = main_clusters
-            HoldNotePercent = Metrics.ln_percent chart
-            Purity = purity
-            Simplicity = 1.0f - complexity
+            Purity = 0.0f
+            Simplicity = 0.0f
 
             Primitives = primitives
-            Segments = CorePatternParser.parse primitives |> Seq.map CorePatternParser.make_segment |> Array.ofSeq
+            Segments = segments
         }
 
     let from_chart = from_chart_uncached |> cached
