@@ -5,8 +5,8 @@ open Prelude
 [<RequireQualifiedAccess>]
 type SegmentType =
     | Stream of bpm: int<beat / minute / rate>
-    | Chordstream of bpm: int<beat / minute / rate> * chord_density: float32
-    | Jacks of bpm: int<beat / minute / rate> * chord_density: float32
+    | Chordstream of bpm: int<beat / minute / rate>
+    | Jacks of bpm: int<beat / minute / rate>
     | Uncategorized
 
 type Segment<'D> =
@@ -16,6 +16,14 @@ type Segment<'D> =
         End: Time
         Contents: RowInfo<'D> list
     }
+
+type SegmentGroup<'D> =
+    {
+        Type: SegmentType
+        Total: Time
+        Rating: float32
+    }
+    member this.Importance = this.Total / 1000.0f<ms> * this.Rating * this.Rating
 
 module CorePatternParser =
 
@@ -28,6 +36,7 @@ module CorePatternParser =
 
     let [<Literal>] MIN_JACK_BPM = 60<beat / minute / rate>
     let [<Literal>] JACK_FORGIVENESS_COUNT = 2
+    let [<Literal>] MIN_STREAM_BPM = 120<beat / minute / rate>
     /// Number of notes in 4 chords that counts as chordstream over stream
     /// e.g. 2-1-1-1 adds up to 5 and is stream, 3-1-1-1 and 2-1-1-2 are chordstream
     let [<Literal>] CHORDSTREAM_THRESHOLD = 6
@@ -54,7 +63,8 @@ module CorePatternParser =
         match rows with
         | a :: b :: c :: d :: rs
             when
-                b.Jacks = 0 && c.Jacks = 0 && d.Jacks = 0
+                a.BPM.Value > MIN_STREAM_BPM
+                && b.Jacks = 0 && c.Jacks = 0 && d.Jacks = 0
                 && b.BPM.Value = a.BPM.Value && c.BPM.Value = a.BPM.Value && d.BPM.Value = a.BPM.Value
                 && a.Notes + b.Notes + c.Notes + d.Notes >= CHORDSTREAM_THRESHOLD
             ->
@@ -77,7 +87,8 @@ module CorePatternParser =
         match rows with
         | a :: b :: c :: d :: rs
             when
-                b.Jacks = 0 && c.Jacks = 0 && d.Jacks = 0
+                a.BPM.Value > MIN_STREAM_BPM
+                && b.Jacks = 0 && c.Jacks = 0 && d.Jacks = 0
                 && b.BPM.Value = a.BPM.Value && c.BPM.Value = a.BPM.Value && d.BPM.Value = a.BPM.Value
                 && a.Notes + b.Notes + c.Notes + d.Notes < CHORDSTREAM_THRESHOLD
             ->
@@ -147,7 +158,7 @@ module CorePatternParser =
         match core_type with
         | CorePatternType.Stream ->
             {
-                Type = SegmentType.Stream bpm
+                Type = SegmentType.Stream(bpm)
                 Start = t_start
                 End = t_end
                 Contents = rows
@@ -155,7 +166,7 @@ module CorePatternParser =
         | CorePatternType.Chordstream ->
             let chord_density = rows |> Seq.averageBy (fun r -> float32 r.Notes * 2.0f)
             {
-                Type = SegmentType.Chordstream(bpm, chord_density)
+                Type = SegmentType.Chordstream(bpm)
                 Start = t_start
                 End = t_end
                 Contents = rows
@@ -163,7 +174,7 @@ module CorePatternParser =
         | CorePatternType.Jacks ->
             let chord_density = rows |> Seq.averageBy (fun r -> float32 r.Notes)
             {
-                Type = SegmentType.Jacks(bpm, chord_density)
+                Type = SegmentType.Jacks(bpm)
                 Start = t_start
                 End = t_end
                 Contents = rows
