@@ -49,12 +49,12 @@ type Preview(info: LoadedChartInfo, change_rate: Rate -> unit) as this =
 
     override this.Init(parent: Widget) =
         Selection.clear()
-        base.Init parent
-        playfield.Init this
-        difficulty_overlay.Init this
-        patterns_overlay.Init this
-        timeline.Init this
-        volume.Init this
+        base.Init(parent)
+        playfield.Init(this)
+        difficulty_overlay.Init(this)
+        patterns_overlay.Init(this)
+        timeline.Init(this)
+        volume.Init(this)
 
     override this.Draw() =
         playfield.Draw()

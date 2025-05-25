@@ -16,9 +16,11 @@ module Localisation =
             let lines = text.Replace("\r", "").Split("\n")
 
             Array.iter
-                (fun (l: string) ->
-                    let s: string[] = l.Split([| '=' |], 2)
-                    mapping.[s.[0]] <- s.[1].Replace("\\n", "\n")
+                (fun (line: string) ->
+                    let split: string[] = line.Split([| '=' |], 2)
+                    if split.Length < 2 then failwithf "Invalid localisation line: %s" line
+
+                    mapping.[split.[0]] <- split.[1].Replace("\\n", "\n")
                 )
                 lines
         with err ->

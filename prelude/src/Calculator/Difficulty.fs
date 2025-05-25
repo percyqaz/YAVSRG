@@ -32,6 +32,8 @@ module Difficulty =
         let data_array = data |> Seq.sort |> Array.ofSeq
         let length = float32 data_array.Length
 
+        if length = 0.0f then 0.0f else
+
         let mutable weight = 0.0f
         let mutable total = 0.0f
 

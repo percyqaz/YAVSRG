@@ -14,10 +14,13 @@ open Interlude.Features.Play
 type PatternsOverlay(chart: ModdedChart, playfield: Playfield, patterns: PatternInfo, state: PlayState) =
     inherit StaticWidget(NodeType.None)
 
-    let jacks = patterns.Segments |> Seq.filter (fun s -> s.Type.IsJacks) |> Seq.sumBy(fun s -> s.End - s.Start)
-    let stream = patterns.Segments |> Seq.filter (fun s -> s.Type.IsStream) |> Seq.sumBy(fun s -> s.End - s.Start)
-    let chordstream = patterns.Segments |> Seq.filter (fun s -> s.Type.IsChordstream) |> Seq.sumBy(fun s -> s.End - s.Start)
-    let uncateg = patterns.Segments |> Seq.filter (fun s -> s.Type.IsUncategorized) |> Seq.sumBy(fun s -> s.End - s.Start)
+    let total_importance =
+        patterns.Uncategorised.Importance
+        + patterns.Jacks.Importance
+        + patterns.Chordstream.Importance
+        + patterns.Stream.Importance
+
+    let tags = patterns.Tags |> Seq.map _.ToString() |> String.concat ", "
 
     let mutable segment_seek = 0
     let mutable last_time = state.CurrentChartTime()
@@ -74,10 +77,18 @@ type PatternsOverlay(chart: ModdedChart, playfield: Playfield, patterns: Pattern
 
         Text.draw(Style.font, sprintf "%A" current_segment.Type, 30.0f, 40.0f, 60.0f, Colors.white)
 
-        Text.draw(Style.font, sprintf "Jacks: %s" (format_duration_ms jacks), 30.0f, 40.0f, 110.0f, Colors.white)
-        Text.draw(Style.font, sprintf "Stream: %s" (format_duration_ms stream), 30.0f, 40.0f, 150.0f, Colors.white)
-        Text.draw(Style.font, sprintf "Chordstream: %s" (format_duration_ms chordstream), 30.0f, 40.0f, 190.0f, Colors.white)
-        Text.draw(Style.font, sprintf "Uncategorized: %s" (format_duration_ms uncateg), 30.0f, 40.0f, 230.0f, Colors.white)
+        let fmt (label: string) (value: CategoryInfo) =
+            let amount = format_duration_ms value.Amount
+            let difficulty = sprintf "*%.2f" value.Difficulty
+            let importance = sprintf "%.2f%%" (value.Importance / total_importance * 100.0f)
+            sprintf "%s: %s | %s | %s" label amount difficulty importance
+
+        Text.draw(Style.font, fmt "Jacks" patterns.Jacks, 30.0f, 40.0f, 110.0f, Colors.red)
+        Text.draw(Style.font, fmt "Chordstream" patterns.Chordstream, 30.0f, 40.0f, 150.0f, Colors.green)
+        Text.draw(Style.font, fmt "Stream" patterns.Stream, 30.0f, 40.0f, 190.0f, Colors.cyan)
+        Text.draw(Style.font, sprintf "Uncategorized: %s | *%.2f | %.2f%%" (format_duration_ms patterns.Uncategorised.Amount) patterns.Uncategorised.Difficulty (patterns.Uncategorised.Importance / total_importance * 100.0f), 30.0f, 40.0f, 230.0f, Colors.white)
+
+        Text.draw(Style.font, tags, 30.0f, 40.0f, 280.0f, Colors.white)
 
         draw_segment(now, current_segment.Start, current_segment.End, current_segment.Type)
 

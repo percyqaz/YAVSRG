@@ -5,7 +5,6 @@ open Percyqaz.Flux.UI
 open Percyqaz.Flux.Graphics
 open Prelude
 open Prelude.Calculator.Patterns
-open Prelude.Calculator
 open Interlude.UI
 open Interlude.Features.Gameplay
 
@@ -17,7 +16,7 @@ type Patterns(display: Setting<InfoPanelMode>) =
 
     let on_chart_update(info: LoadedChartInfo) =
         patterns <- info.Patterns.MainPatterns
-        category <- sprintf "%.2f%% S | %.2f%% P" (info.Patterns.Simplicity * 100.0f) (info.Patterns.Purity * 100.0f)
+        category <- sprintf "%.2f%% P" (info.Patterns.Purity * 100.0f)
 
     override this.Init(parent: Widget) =
         base.Init parent

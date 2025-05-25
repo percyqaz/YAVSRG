@@ -8,6 +8,12 @@ type SegmentType =
     | Chordstream of bpm: int<beat / minute / rate>
     | Jacks of bpm: int<beat / minute / rate>
     | Uncategorized
+    member this.BPM =
+        match this with
+        | Stream bpm -> bpm
+        | Chordstream bpm -> bpm
+        | Jacks bpm -> bpm
+        | Uncategorized -> 0<beat / minute / rate>
 
 type Segment<'D> =
     {
