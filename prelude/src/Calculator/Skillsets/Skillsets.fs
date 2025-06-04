@@ -94,7 +94,7 @@ module KeymodeSkillBreakdown =
         let days = float (now - before) / 86_400_000.0
         exp (DAILY_DECAY_CONSTANT * days) |> float32
 
-    let private skill_increase (patterns: PatternReport) (accuracy: float) (rate: Rate) (skills: KeymodeSkillBreakdown) : unit =
+    let private skill_increase (patterns: LibraryPatternInfo) (accuracy: float) (rate: Rate) (skills: KeymodeSkillBreakdown) : unit =
 
         ignore()
 
@@ -134,7 +134,7 @@ module KeymodeSkillBreakdown =
         //    PatternSkillBreakdown.observe p.Pattern (p.Density75 * rate, accuracy, time / rate * 0.5f) skill
         //    PatternSkillBreakdown.observe p.Pattern (p.Density90 * rate, accuracy, time / rate * 0.2f) skill
 
-    let score (patterns: PatternReport) (accuracy: float) (rate: Rate) (skills: KeymodeSkillBreakdown) : KeymodeSkillIncrease =
+    let score (patterns: LibraryPatternInfo) (accuracy: float) (rate: Rate) (skills: KeymodeSkillBreakdown) : KeymodeSkillIncrease =
 
         let before = skills.Copy
 
@@ -142,7 +142,7 @@ module KeymodeSkillBreakdown =
 
         skills.Minus before
 
-    let what_if (patterns: PatternReport) (accuracy: float) (rate: Rate) (skills: KeymodeSkillBreakdown) : KeymodeSkillIncrease =
+    let what_if (patterns: LibraryPatternInfo) (accuracy: float) (rate: Rate) (skills: KeymodeSkillBreakdown) : KeymodeSkillIncrease =
 
         let potential = skills.Copy
 

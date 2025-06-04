@@ -19,7 +19,7 @@ module Patterns =
                     match ChartDatabase.get_chart entry.Hash chart_db with
                     | Ok chart ->
                         let difficulty = Difficulty.calculate(1.0f<rate>, chart.Notes)
-                        yield entry.Hash, difficulty.Overall, PatternReport.from_chart (difficulty, chart)
+                        yield entry.Hash, difficulty.Overall, LibraryPatternInfo.from_chart(chart)
                     | Error reason -> Logging.Warn "Error recalculating patterns for %s: %s" entry.Hash reason
                     progress (Processing (i + 1, charts.Length))
             }

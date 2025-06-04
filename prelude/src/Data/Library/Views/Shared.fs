@@ -85,13 +85,13 @@ module internal Shared =
         | None -> -2, "No lamp achieved"
 
     let below_ln_percent (threshold: float32) (chart_meta: ChartMeta, _: LibraryViewContext) : bool =
-        chart_meta.Patterns.LNPercent < threshold
+        chart_meta.Patterns.HoldNotePercent < threshold
 
     let above_ln_percent (threshold: float32) (chart_meta: ChartMeta, _: LibraryViewContext) : bool =
-        chart_meta.Patterns.LNPercent > threshold
+        chart_meta.Patterns.HoldNotePercent > threshold
 
     let has_sv (chart_meta: ChartMeta, _: LibraryViewContext) =
-        chart_meta.Patterns.SVAmount > Categorise.SV_AMOUNT_THRESHOLD
+        chart_meta.Patterns.SVAmount > SV_AMOUNT_THRESHOLD
 
 [<RequireQualifiedAccess>]
 [<NoEquality>]

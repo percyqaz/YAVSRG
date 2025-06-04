@@ -45,7 +45,7 @@ type ChartMeta =
         BPM: int
         DateAdded: int64
         Rating: float32
-        Patterns: PatternReport
+        Patterns: LibraryPatternInfo
     }
 
     member this.OriginString =
@@ -119,5 +119,5 @@ type ChartMeta =
                 else 0
             DateAdded = timestamp
             Rating = difficulty.Overall
-            Patterns = (PatternReport.from_chart(difficulty, chart))
+            Patterns = LibraryPatternInfo.from_chart(chart)
         }

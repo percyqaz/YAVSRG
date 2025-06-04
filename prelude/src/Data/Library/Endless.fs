@@ -35,31 +35,31 @@ module Suggestion =
 
     let mutable recommended_already = Set.empty
 
-    let most_common_pattern (total: Time) (patterns: PatternReport) : CorePattern =
-        Array.tryHead patterns.Clusters
-        |> Option.map _.Pattern
-        |> Option.defaultValue Stream
+    //let most_common_pattern (total: Time) (patterns: PatternReport) : CorePattern =
+    //    Array.tryHead patterns.Clusters
+    //    |> Option.map _.Pattern
+    //    |> Option.defaultValue Stream
 
-    // todo: to be written as part of the actual pattern code where it can be tested!
-    let private pattern_similarity (total: Time) (rate: Rate, patterns: PatternReport) (c_rate: Rate, c_patterns: PatternReport) : float32 =
+    //// todo: to be written as part of the actual pattern code where it can be tested!
+    //let private pattern_similarity (total: Time) (rate: Rate, patterns: PatternReport) (c_rate: Rate, c_patterns: PatternReport) : float32 =
 
-        let c_total = c_patterns.Clusters |> Seq.sumBy _.Amount
-        if most_common_pattern total patterns <> most_common_pattern c_total c_patterns then 0.0f
-        else
+    //    let c_total = c_patterns.Clusters |> Seq.sumBy _.Amount
+    //    if most_common_pattern total patterns <> most_common_pattern c_total c_patterns then 0.0f
+    //    else
 
-        let mutable similarity = 0.0f
-        for p2 in c_patterns.Clusters do
-            for p1 in patterns.Clusters do
-                if p1.Pattern = p2.Pattern then
-                    let mixed_similarity = if p1.Type.IsMixed = p2.Type.IsMixed then 1.0f else 0.5f
-                    let bpm_similarity = 1.0f
-                        //let difference = (rate * float32 p1.BPM) / (c_rate * float32 p2.BPM) |> log |> abs
-                        //Math.Clamp(1.0f - 10.0f * difference, 0.0f, 1.0f)
-                    let density_similarity =
-                        let difference = (rate * p1.Density.P75) / (c_rate * p2.Density.P75) |> log |> abs
-                        Math.Clamp(1.0f - 10.0f * difference, 0.0f, 1.0f)
-                    similarity <- similarity + mixed_similarity * bpm_similarity * density_similarity * (p1.Amount / total) * (p2.Amount / c_total)
-        similarity
+    //    let mutable similarity = 0.0f
+    //    for p2 in c_patterns.Clusters do
+    //        for p1 in patterns.Clusters do
+    //            if p1.Pattern = p2.Pattern then
+    //                let mixed_similarity = if p1.Type.IsMixed = p2.Type.IsMixed then 1.0f else 0.5f
+    //                let bpm_similarity = 1.0f
+    //                    //let difference = (rate * float32 p1.BPM) / (c_rate * float32 p2.BPM) |> log |> abs
+    //                    //Math.Clamp(1.0f - 10.0f * difference, 0.0f, 1.0f)
+    //                let density_similarity =
+    //                    let difference = (rate * p1.Density.P75) / (c_rate * p2.Density.P75) |> log |> abs
+    //                    Math.Clamp(1.0f - 10.0f * difference, 0.0f, 1.0f)
+    //                similarity <- similarity + mixed_similarity * bpm_similarity * density_similarity * (p1.Amount / total) * (p2.Amount / c_total)
+    //    similarity
 
     let get_random (filter_by: Filter) (ctx: LibraryViewContext) : ChartMeta option =
         let rand = Random()
@@ -83,10 +83,10 @@ module Suggestion =
         recommended_already <- Set.add base_chart.Hash recommended_already
         recommended_already <- Set.add (base_chart.Title.ToLower()) recommended_already
 
-        let target_density = patterns.Density50 * rate
+        let target_difficulty = base_chart.Patterns.EstimatedDifficulty(rate)
 
-        let max_ln_pc = patterns.LNPercent + 0.1f
-        let min_ln_pc = patterns.LNPercent - 0.1f
+        let max_ln_pc = patterns.HoldNotePercent + 0.1f
+        let min_ln_pc = patterns.HoldNotePercent - 0.1f
 
         let now = Timestamp.now ()
         let THIRTY_DAYS = 30L * 24L * 3600_000L
@@ -97,21 +97,21 @@ module Suggestion =
             |> Seq.filter (fun chart_meta -> not (recommended_already.Contains chart_meta.Hash))
             |> Seq.filter (fun chart_meta -> not (recommended_already.Contains (chart_meta.Title.ToLower())))
             |> Seq.choose (fun chart_meta ->
-                let best_rate = target_density / chart_meta.Patterns.Density50
+                let best_rate = chart_meta.Patterns.EstimatedRate target_difficulty
                 let best_approx_rate = round(best_rate / 0.05f<rate>) * 0.05f<rate>
                 if best_approx_rate >= ctx.MinimumRate && best_approx_rate <= ctx.MaximumRate then
                     Some (chart_meta, (best_approx_rate, chart_meta.Patterns))
                 else None
             )
-            |> Seq.filter (fun (chart_meta, (rate, p)) -> p.LNPercent >= min_ln_pc && p.LNPercent <= max_ln_pc)
+            |> Seq.filter (fun (chart_meta, (rate, p)) -> p.HoldNotePercent >= min_ln_pc && p.HoldNotePercent <= max_ln_pc)
             |> if ctx.OnlyNewCharts then
                 Seq.filter (fun (chart_meta, (rate, p)) -> now - (UserDatabase.get_chart_data chart_meta.Hash ctx.UserDatabase).LastPlayed > THIRTY_DAYS)
                else
                 id
             |> ctx.Filter.Apply
 
-        let total_pattern_amount = patterns.Clusters |> Seq.sumBy _.Amount
-        let spikiness = patterns.Density90 / patterns.Density50
+        //let total_pattern_amount = patterns.Clusters |> Seq.sumBy _.Amount
+        //let spikiness = patterns.Density90 / patterns.Density50
 
         seq {
             for chart_meta, (c_rate, c_patterns) in candidates do
@@ -126,12 +126,12 @@ module Suggestion =
                     let l2 = chart_meta.Length / c_rate
                     1.0f - min 1.0f (abs (l2 - l1) / l1 * 10.0f)
 
-                let difficulty_compatibility =
-                    let c_spikiness = c_patterns.Density90 / c_patterns.Density50
-                    1.0f - min 1.0f (abs (c_spikiness - spikiness) * 10.0f)
+                let difficulty_compatibility = 1.0f
+                    //let c_spikiness = c_patterns.Density90 / c_patterns.Density50
+                    //1.0f - min 1.0f (abs (c_spikiness - spikiness) * 10.0f)
 
-                let pattern_compatibility =
-                    pattern_similarity total_pattern_amount (rate, patterns) (c_rate, c_patterns)
+                let pattern_compatibility = 1.0f
+                    //pattern_similarity total_pattern_amount (rate, patterns) (c_rate, c_patterns)
 
                 let compatibility =
                     sv_compatibility * length_compatibility * difficulty_compatibility * pattern_compatibility

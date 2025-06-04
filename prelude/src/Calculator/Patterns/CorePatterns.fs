@@ -2,6 +2,29 @@
 
 open Prelude
 
+type CorePattern =
+    | Stream
+    | Chordstream
+    | Jacks
+
+    member this.DensityToBPM =
+        match this with
+        | Stream -> 52.5f<beat / minute>
+        | Chordstream -> 35f<beat / minute>
+        | Jacks -> 17.5f<beat / minute>
+
+    member this.RatingMultiplier =
+        match this with
+        | Stream -> 1f / 3f
+        | Chordstream -> 0.5f
+        | Jacks -> 1.0f
+
+    member this.AccuracyBreakpoints =
+        match this with
+        | Stream -> ( 0.97, 0.935, 0.90 )
+        | Chordstream -> ( 0.98, 0.95, 0.91 )
+        | Jacks -> ( 0.99, 0.96, 0.93 )
+
 [<RequireQualifiedAccess>]
 type SegmentType =
     | Stream of bpm: int<beat / minute / rate>
@@ -192,3 +215,26 @@ module CorePatternParser =
                 End = t_end
                 Contents = rows
             }
+
+[<RequireQualifiedAccess>]
+type ChartTag =
+    | Jacks
+    | Chordstream
+    | Stream
+    | LN
+    | SV
+    | Pure
+    | Beginner
+    | Hybrid
+
+[<AutoOpen>]
+module PatternConstants =
+
+    let [<Literal>] RELATIVE_IMPORTANCE_THRESHOLD = 0.2f
+    let [<Literal>] PURITY_THRESHOLD = 0.7f
+    let [<Literal>] MAJORITY_THRESHOLD = 0.5f
+    let [<Literal>] SV_AMOUNT_THRESHOLD = 2000.0f<ms>
+    let [<Literal>] LN_AMOUNT_THRESHOLD = 0.25f
+
+    let importance (duration: Time) (rating: float32) =
+        duration / 1000.0f<ms> * rating * rating * rating

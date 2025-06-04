@@ -11,11 +11,11 @@ open Interlude.Features.Gameplay
 type Patterns(display: Setting<InfoPanelMode>) =
     inherit Container(NodeType.None)
 
-    let mutable patterns: PatternCluster array = [||]
+    //let mutable patterns: PatternCluster array = [||]
     let mutable category: string = ""
 
     let on_chart_update(info: LoadedChartInfo) =
-        patterns <- info.Patterns.MainPatterns
+        //patterns <- info.Patterns.MainPatterns
         category <- sprintf "%.2f%% P" (info.Patterns.Purity * 100.0f)
 
     override this.Init(parent: Widget) =
@@ -43,47 +43,47 @@ type Patterns(display: Setting<InfoPanelMode>) =
 
         let TEXT_WIDTH = 360.0f
 
-        for entry in patterns do
-            Text.fill_b (
-                Style.font,
-                (sprintf "%O" entry.Pattern),
-                b.ShrinkB(25.0f).SliceL(TEXT_WIDTH),
-                Colors.text,
-                Alignment.LEFT
-            )
+        //for entry in patterns do
+        //    Text.fill_b (
+        //        Style.font,
+        //        (sprintf "%O" entry.Pattern),
+        //        b.ShrinkB(25.0f).SliceL(TEXT_WIDTH),
+        //        Colors.text,
+        //        Alignment.LEFT
+        //    )
 
-            Text.fill_b (
-                Style.font,
-                String.concat ", " (entry.SpecificPatterns |> Seq.truncate 2 |> Seq.map (fun (p, amount) -> sprintf "%.0f%% %s" (amount * 100.0f) p)),
-                b.SliceB(30.0f).SliceL(TEXT_WIDTH),
-                Colors.text_subheading,
-                Alignment.LEFT
-            )
+        //    Text.fill_b (
+        //        Style.font,
+        //        String.concat ", " (entry.SpecificPatterns |> Seq.truncate 2 |> Seq.map (fun (p, amount) -> sprintf "%.0f%% %s" (amount * 100.0f) p)),
+        //        b.SliceB(30.0f).SliceL(TEXT_WIDTH),
+        //        Colors.text_subheading,
+        //        Alignment.LEFT
+        //    )
 
-            Text.fill_b (
-                Style.font,
-                Icons.MUSIC + " " + (match entry.Type with ClusterType.Normal bpm -> sprintf "%i" bpm | ClusterType.Mixed bpm -> sprintf "~%i" bpm | ClusterType.Combined (min, max) -> sprintf "%i-%i" min max),
-                b.ShrinkL(TEXT_WIDTH).ShrinkY(10.0f),
-                Colors.text,
-                Alignment.LEFT
-            )
+        //    Text.fill_b (
+        //        Style.font,
+        //        Icons.MUSIC + " " + (match entry.Type with ClusterType.Normal bpm -> sprintf "%i" bpm | ClusterType.Mixed bpm -> sprintf "~%i" bpm | ClusterType.Combined (min, max) -> sprintf "%i-%i" min max),
+        //        b.ShrinkL(TEXT_WIDTH).ShrinkY(10.0f),
+        //        Colors.text,
+        //        Alignment.LEFT
+        //    )
 
-            Text.fill_b (
-                Style.font,
-                Icons.STAR + " " + (sprintf "%.2f" entry.Rating),
-                b.ShrinkL(TEXT_WIDTH).ShrinkY(10.0f),
-                Colors.text,
-                Alignment.CENTER
-            )
+        //    Text.fill_b (
+        //        Style.font,
+        //        Icons.STAR + " " + (sprintf "%.2f" entry.Rating),
+        //        b.ShrinkL(TEXT_WIDTH).ShrinkY(10.0f),
+        //        Colors.text,
+        //        Alignment.CENTER
+        //    )
 
-            Text.fill_b (
-                Style.font,
-                Icons.CLOCK + " " + (format_duration_ms (entry.Amount / SelectedChart.rate.Value)),
-                b.ShrinkL(TEXT_WIDTH).ShrinkY(10.0f),
-                Colors.text,
-                Alignment.RIGHT
-            )
+        //    Text.fill_b (
+        //        Style.font,
+        //        Icons.CLOCK + " " + (format_duration_ms (entry.Amount / SelectedChart.rate.Value)),
+        //        b.ShrinkL(TEXT_WIDTH).ShrinkY(10.0f),
+        //        Colors.text,
+        //        Alignment.RIGHT
+        //    )
 
-            b <- b.Translate(0.0f, 65.0f)
+        //    b <- b.Translate(0.0f, 65.0f)
 
         Text.fill_b (Style.font, category, this.Bounds.SliceB(60.0f), Colors.text, Alignment.CENTER)

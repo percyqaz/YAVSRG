@@ -89,6 +89,7 @@ type PatternsOverlay(chart: ModdedChart, playfield: Playfield, patterns: Pattern
         Text.draw(Style.font, sprintf "Uncategorized: %s | *%.2f | %.2f%%" (format_duration_ms patterns.Uncategorised.Amount) patterns.Uncategorised.Difficulty (patterns.Uncategorised.Importance / total_importance * 100.0f), 30.0f, 40.0f, 230.0f, Colors.white)
 
         Text.draw(Style.font, tags, 30.0f, 40.0f, 280.0f, Colors.white)
+        Text.draw(Style.font, sprintf "%.2f" patterns.Purity, 30.0f, 40.0f, 320.0f, Colors.white)
 
         draw_segment(now, current_segment.Start, current_segment.End, current_segment.Type)
 

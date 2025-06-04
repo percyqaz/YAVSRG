@@ -12,7 +12,7 @@ module DbCharts =
     let private no_nan x = if System.Single.IsFinite x then x else 0.0f
 
     // Increment this to recalculate pattern & rating data
-    let private CALC_VERSION = 7uy
+    let private CALC_VERSION = 8uy
 
     // todo: create binary representation of Patterns data for much faster reading/writing and storage efficiency
     let internal CREATE_TABLE: NonQuery<unit> =
@@ -88,7 +88,7 @@ module DbCharts =
                     json(@Background), json(@Audio), @PreviewTime,
                     json(@Packs), json(@Origins),
                     @Keys, @Length, @BPM,
-                    @DateAdded, @CalcVersion, @Rating, json(@Patterns),
+                    @DateAdded, @CalcVersion, @Rating, @Patterns,
                     @Chart)
                 ON CONFLICT DO UPDATE SET
                     Title = excluded.Title,
@@ -155,7 +155,7 @@ module DbCharts =
                     "@DateAdded", SqliteType.Integer, 8
                     "@CalcVersion", SqliteType.Integer, 1
                     "@Rating", SqliteType.Real, 4
-                    "@Patterns", SqliteType.Text, -1
+                    "@Patterns", SqliteType.Blob, -1
                     "@Chart", SqliteType.Blob, -1
                 ]
             FillParameters =
@@ -224,9 +224,12 @@ module DbCharts =
                 r.Float32
             Patterns =
                 if calc_version <> CALC_VERSION then
-                    r.String |> ignore
-                    PatternReport.Default
-                else r.Json JSON
+                    r.Stream |> ignore
+                    LibraryPatternInfo.Default
+                else
+                    let stream = r.Stream
+                    use br = new BinaryReader(stream)
+                    LibraryPatternInfo.Read br
         }
 
     let private GET_META: Query<string, ChartMeta> =
@@ -316,32 +319,37 @@ module DbCharts =
     let delete_batch (hashes: string seq) (db: Database) : int =
         DELETE.Batch hashes db |> expect
 
-    let private UPDATE_CALCULATED_DATA: NonQuery<string * float32 * PatternReport> =
+    let private UPDATE_CALCULATED_DATA: NonQuery<string * float32 * LibraryPatternInfo> =
         {
             SQL = """
             UPDATE charts
             SET
                 CalcVersion = @CalcVersion,
                 Rating = @Rating,
-                Patterns = json(@Patterns)
+                Patterns = @Patterns
             WHERE Id = @Hash;
             """
             Parameters = [
                 "@Hash", SqliteType.Text, -1
                 "@CalcVersion", SqliteType.Integer, 1
                 "@Rating", SqliteType.Real, 4
-                "@Patterns", SqliteType.Text, -1
+                "@Patterns", SqliteType.Blob, -1
             ]
             FillParameters =
                 (fun p (hash, rating, patterns) ->
                     p.String hash
                     p.Byte CALC_VERSION
                     p.Float32 rating
-                    p.Json JSON patterns
+                    p.Blob (
+                        use ms = new MemoryStream()
+                        use bw = new BinaryWriter(ms)
+                        patterns.Write bw
+                        ms.ToArray()
+                    )
                 )
         }
 
-    let update_calculated_data (chunk: (string * float32 * PatternReport) seq) (db: Database) =
+    let update_calculated_data (chunk: (string * float32 * LibraryPatternInfo) seq) (db: Database) =
         UPDATE_CALCULATED_DATA.Batch chunk db |> expect |> ignore
 
     let private UPDATE_PACKS: NonQuery<string * Set<string>> =

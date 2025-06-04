@@ -1,5 +1,6 @@
 ﻿namespace Interlude.Features.MainMenu
 
+open Percyqaz.Common
 open Percyqaz.Flux.Audio
 open Percyqaz.Flux.Graphics
 open Percyqaz.Flux.Windowing
@@ -34,6 +35,7 @@ type LoadingScreen(post_init_thunk: unit -> unit) =
                 animation.Add(Animation.Delay 500.0)
                 animation.Add(Animation.Action(fun () -> Screen.change ScreenType.MainMenu Transitions.UnderLogo |> ignore))
             | Error error ->
+                Logging.Critical "%s" error.StackTrace
                 GameThread.defer (fun () -> raise error)
         }
         |> Async.Start

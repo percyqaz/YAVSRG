@@ -116,15 +116,15 @@ type Filter =
             | None -> ()
 
             match this.LNPercentMin with
-            | Some min_pc -> yield fun chart_meta -> chart_meta.Patterns.LNPercent > min_pc
+            | Some min_pc -> yield fun chart_meta -> chart_meta.Patterns.HoldNotePercent > min_pc
             | None -> ()
             match this.LNPercentMax with
-            | Some max_pc -> yield fun chart_meta -> chart_meta.Patterns.LNPercent < max_pc
+            | Some max_pc -> yield fun chart_meta -> chart_meta.Patterns.HoldNotePercent < max_pc
             | None -> ()
 
             match this.SV with
-            | Some false -> yield fun chart_meta -> not (chart_meta.Patterns.SVAmount > Categorise.SV_AMOUNT_THRESHOLD)
-            | Some true -> yield fun chart_meta -> chart_meta.Patterns.SVAmount > Categorise.SV_AMOUNT_THRESHOLD
+            | Some false -> yield fun chart_meta -> not (chart_meta.Patterns.SVAmount > SV_AMOUNT_THRESHOLD)
+            | Some true -> yield fun chart_meta -> chart_meta.Patterns.SVAmount > SV_AMOUNT_THRESHOLD
             | None -> ()
 
             match this.Creator with
@@ -135,17 +135,17 @@ type Filter =
                 yield fun chart_meta ->
                     let report = chart_meta.Patterns
 
-                    let matches (pattern: string) =
-                        report.Category.Contains(pattern, StringComparison.OrdinalIgnoreCase)
-                        || (
-                            report.Clusters
-                            |> Array.exists (fun f ->
-                                f.SpecificTypes
-                                |> List.exists (fun (p, amount) ->
-                                    amount * f.Amount / chart_meta.Length > 0.1f && p.Contains(pattern, StringComparison.OrdinalIgnoreCase)
-                                )
-                            )
-                        )
+                    let matches (pattern: string) = true
+                        //report.Category.Contains(pattern, StringComparison.OrdinalIgnoreCase)
+                        //|| (
+                        //    report.Clusters
+                        //    |> Array.exists (fun f ->
+                        //        f.SpecificTypes
+                        //        |> List.exists (fun (p, amount) ->
+                        //            amount * f.Amount / chart_meta.Length > 0.1f && p.Contains(pattern, StringComparison.OrdinalIgnoreCase)
+                        //        )
+                        //    )
+                        //)
 
                     Array.forall matches this.PatternTerms
                     && Array.forall (matches >> not) this.PatternAntiTerms
