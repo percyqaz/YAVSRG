@@ -35,32 +35,6 @@ module Suggestion =
 
     let mutable recommended_already = Set.empty
 
-    //let most_common_pattern (total: Time) (patterns: PatternReport) : CorePattern =
-    //    Array.tryHead patterns.Clusters
-    //    |> Option.map _.Pattern
-    //    |> Option.defaultValue Stream
-
-    //// todo: to be written as part of the actual pattern code where it can be tested!
-    //let private pattern_similarity (total: Time) (rate: Rate, patterns: PatternReport) (c_rate: Rate, c_patterns: PatternReport) : float32 =
-
-    //    let c_total = c_patterns.Clusters |> Seq.sumBy _.Amount
-    //    if most_common_pattern total patterns <> most_common_pattern c_total c_patterns then 0.0f
-    //    else
-
-    //    let mutable similarity = 0.0f
-    //    for p2 in c_patterns.Clusters do
-    //        for p1 in patterns.Clusters do
-    //            if p1.Pattern = p2.Pattern then
-    //                let mixed_similarity = if p1.Type.IsMixed = p2.Type.IsMixed then 1.0f else 0.5f
-    //                let bpm_similarity = 1.0f
-    //                    //let difference = (rate * float32 p1.BPM) / (c_rate * float32 p2.BPM) |> log |> abs
-    //                    //Math.Clamp(1.0f - 10.0f * difference, 0.0f, 1.0f)
-    //                let density_similarity =
-    //                    let difference = (rate * p1.Density.P75) / (c_rate * p2.Density.P75) |> log |> abs
-    //                    Math.Clamp(1.0f - 10.0f * difference, 0.0f, 1.0f)
-    //                similarity <- similarity + mixed_similarity * bpm_similarity * density_similarity * (p1.Amount / total) * (p2.Amount / c_total)
-    //    similarity
-
     let get_random (filter_by: Filter) (ctx: LibraryViewContext) : ChartMeta option =
         let rand = Random()
 
@@ -97,15 +71,15 @@ module Suggestion =
             |> Seq.filter (fun chart_meta -> not (recommended_already.Contains chart_meta.Hash))
             |> Seq.filter (fun chart_meta -> not (recommended_already.Contains (chart_meta.Title.ToLower())))
             |> Seq.choose (fun chart_meta ->
-                let best_rate = chart_meta.Patterns.EstimatedRate target_difficulty
+                let best_rate = chart_meta.Patterns.EstimatedRate(target_difficulty)
                 let best_approx_rate = round(best_rate / 0.05f<rate>) * 0.05f<rate>
                 if best_approx_rate >= ctx.MinimumRate && best_approx_rate <= ctx.MaximumRate then
-                    Some (chart_meta, (best_approx_rate, chart_meta.Patterns))
+                    Some (chart_meta, best_approx_rate)
                 else None
             )
-            |> Seq.filter (fun (chart_meta, (rate, p)) -> p.HoldNotePercent >= min_ln_pc && p.HoldNotePercent <= max_ln_pc)
+            |> Seq.filter (fun (chart_meta, _) -> chart_meta.Patterns.HoldNotePercent >= min_ln_pc && chart_meta.Patterns.HoldNotePercent <= max_ln_pc)
             |> if ctx.OnlyNewCharts then
-                Seq.filter (fun (chart_meta, (rate, p)) -> now - (UserDatabase.get_chart_data chart_meta.Hash ctx.UserDatabase).LastPlayed > THIRTY_DAYS)
+                Seq.filter (fun (chart_meta, _) -> now - (UserDatabase.get_chart_data chart_meta.Hash ctx.UserDatabase).LastPlayed > THIRTY_DAYS)
                else
                 id
             |> ctx.Filter.Apply
@@ -114,10 +88,10 @@ module Suggestion =
         //let spikiness = patterns.Density90 / patterns.Density50
 
         seq {
-            for chart_meta, (c_rate, c_patterns) in candidates do
+            for chart_meta, c_rate in candidates do
 
                 let sv_compatibility =
-                    if (patterns.SVAmount < 30000.0f<ms>) <> (c_patterns.SVAmount < 30000.0f<ms>) then
+                    if (patterns.SVAmount < 30000.0f<ms>) <> (chart_meta.Patterns.SVAmount < 30000.0f<ms>) then
                         0.5f
                     else 1.0f
 
@@ -130,8 +104,7 @@ module Suggestion =
                     //let c_spikiness = c_patterns.Density90 / c_patterns.Density50
                     //1.0f - min 1.0f (abs (c_spikiness - spikiness) * 10.0f)
 
-                let pattern_compatibility = 1.0f
-                    //pattern_similarity total_pattern_amount (rate, patterns) (c_rate, c_patterns)
+                let pattern_compatibility = Similarity.calculate patterns chart_meta.Patterns
 
                 let compatibility =
                     sv_compatibility * length_compatibility * difficulty_compatibility * pattern_compatibility

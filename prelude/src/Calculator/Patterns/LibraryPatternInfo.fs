@@ -62,6 +62,24 @@ type LibraryPatternInfo =
         let d = (difficulty - difficulty100) / (difficulty150 - difficulty100)
         1.0f<rate> + d * 0.5f<rate>
 
+    member this.JackBPM =
+        if this.Tags.Contains ChartTag.Jacks then
+            this.Jacks.SpecificBPMs |> Array.tryHead |> Option.map (fun (bpm, _, _) -> bpm)
+        else
+            None
+
+    member this.ChordstreamBPM =
+        if this.Tags.Contains ChartTag.Chordstream then
+            this.Chordstream.SpecificBPMs |> Array.tryHead |> Option.map (fun (bpm, _, _) -> bpm)
+        else
+            None
+
+    member this.StreamBPM =
+        if this.Tags.Contains ChartTag.Stream then
+            this.Stream.SpecificBPMs |> Array.tryHead |> Option.map (fun (bpm, _, _) -> bpm)
+        else
+            None
+
 module LibraryPatternInfo =
 
     let category_info (segments: Segment<float32 * float32> array) : LibraryCategoryInfo =

@@ -80,6 +80,7 @@
     <Compile Include="Calculator\Patterns\CorePatterns.fs" />
     <Compile Include="Calculator\Patterns\PatternInfo.fs" />
     <Compile Include="Calculator\Patterns\LibraryPatternInfo.fs" />
+    <Compile Include="Calculator\Patterns\Similarity.fs" />
     <Compile Include="Calculator\Patterns\Serialization.fs" />
     <Compile Include="Calculator\Skillsets\PatternStats.fs" />
     <Compile Include="Calculator\Skillsets\CombinedStats.fs" />

@@ -178,7 +178,7 @@ module internal Primitives =
         let density = Density.process_chart chart
         let hold_coverage = HoldCoverage.calculate_coverage (chart.Keys, chart.Notes, 1.0f<rate>)
         let difficulty100 = Difficulty.calculate (1.0f<rate>, chart.Notes)
-        let difficulty150 = Difficulty.calculate (1.0f<rate>, chart.Notes)
+        let difficulty150 = Difficulty.calculate (1.5f<rate>, chart.Notes)
 
         calculate(
             density,
