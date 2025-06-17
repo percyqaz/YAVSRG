@@ -14,7 +14,6 @@ module DbCharts =
     // Increment this to recalculate pattern & rating data
     let private CALC_VERSION = 8uy
 
-    // todo: create binary representation of Patterns data for much faster reading/writing and storage efficiency
     let internal CREATE_TABLE: NonQuery<unit> =
         { NonQuery.without_parameters () with
             SQL =
@@ -181,7 +180,12 @@ module DbCharts =
                     p.Int64 db_chart.DateAdded
                     p.Byte CALC_VERSION
                     p.Float32 (no_nan db_chart.Rating)
-                    p.Json JSON db_chart.Patterns
+                    p.Blob (
+                        use ms = new MemoryStream()
+                        use bw = new BinaryWriter(ms)
+                        db_chart.Patterns.Write bw
+                        ms.ToArray()
+                    )
                     p.Blob (
                         use ms = new MemoryStream()
                         use bw = new BinaryWriter(ms)
