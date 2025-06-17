@@ -46,12 +46,3 @@ module Library =
 
     let save (library: Library) =
         save_important_json_file (Path.Combine(get_game_folder "Data", "collections.json")) library.Collections
-
-type LibraryViewContext =
-    {
-        Rate: Rate
-        RulesetId: string
-        Ruleset: Ruleset
-        Library: Library
-        UserDatabase: UserDatabase
-    }

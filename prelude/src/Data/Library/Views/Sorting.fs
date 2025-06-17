@@ -8,7 +8,7 @@ type SortMethod = ChartMeta * LibraryViewContext -> SortingTag
 
 module Sorting =
 
-    let modes: IDictionary<string, SortMethod> =
+    let USER_SELECTABLE_SORTS: IDictionary<string, SortMethod> =
         dict
             [
                 "difficulty", fun (x, _) -> "", 0.0f, x.Rating

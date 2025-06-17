@@ -32,6 +32,8 @@ type MultiSelection =
             | LibraryContext.Playlist (_, p, _) -> MultiSelectContext.Playlist p
             | LibraryContext.Table _
             | LibraryContext.Pack _
+            | LibraryContext.Category _
+            | LibraryContext.Suggestion _
             | LibraryContext.None -> MultiSelectContext.Normal
         {
             Context = ctx
@@ -47,6 +49,8 @@ type MultiSelection =
 
                 | MultiSelectContext.Normal, LibraryContext.None
                 | MultiSelectContext.Normal, LibraryContext.Pack _
+                | MultiSelectContext.Normal, LibraryContext.Suggestion _
+                | MultiSelectContext.Normal, LibraryContext.Category _
                 | MultiSelectContext.Normal, LibraryContext.Table _ -> true
 
                 | MultiSelectContext.Likes, LibraryContext.Likes -> true

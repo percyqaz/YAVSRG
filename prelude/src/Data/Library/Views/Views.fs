@@ -5,10 +5,62 @@ open System.Collections.Generic
 open Prelude.Backbeat
 open Prelude.Data.Library
 
+type Group =
+    {
+        Charts: (ChartMeta * LibraryContext) array
+        Context: LibraryGroupContext
+    }
+
+type private GroupWithSorting =
+    {
+        Charts: ResizeArray<ChartMeta * LibraryContext * SortingTag>
+        Context: LibraryGroupContext
+    }
+    member this.ToGroup (reverse_sorting: bool) : Group =
+        {
+            Charts =
+                this.Charts
+                |> Seq.sortBy (fun (_, _, key) -> key)
+                |> if reverse_sorting then Seq.rev else id
+                |> Seq.map (fun (chart_meta, ctx, _) -> (chart_meta, ctx))
+                |> Array.ofSeq
+            Context = this.Context
+        }
+
+type SortedGroups = (string * Group) seq
+
+type GroupFunc = ChartMeta * LibraryViewContext -> int * string
+
+type LibraryView =
+    | Groups of GroupFunc
+    | Packs
+    | Collections
+    | Levels
+    | Category
+    | Suggestions of SuggestionContext
+
 module LibraryView =
 
-    type SortedGroups = (string * Group) seq
+    let USER_SELECTABLE_VIEWS: IDictionary<string, LibraryView> =
+        dict
+            [
+                "none", Groups <| fun (c, _) -> 0, "No grouping"
+                "pack", Packs
+                "collection", Collections
+                "level", Levels
+                "category", Category
+                "difficulty", Groups format_difficulty
+                "date_played", Groups format_date_last_played
+                "date_installed", Groups format_date_added
+                "grade", Groups grade_achieved
+                "lamp", Groups lamp_achieved
+                "title", Groups <| fun (c, _) -> 0, first_character c.Title
+                "artist", Groups <| fun (c, _) -> 0, first_character c.Artist
+                "creator", Groups <| fun (c, _) -> 0, first_character c.Creator
+                "keymode", Groups <| fun (c, _) -> c.Keys, c.Keys.ToString() + "K"
+            ]
 
+    // todo: sort 3, 3.5, 4 in correct order
     let private group_name_to_smart_sort_list (name: string) : string list =
         name
             .ToLowerInvariant()
@@ -196,9 +248,37 @@ module LibraryView =
         |> if reverse_groups then Seq.rev else id
         |> Seq.map (fun kvp -> kvp.Key, kvp.Value.ToGroup reverse_sorting)
 
+    let private get_categories
+        (filter_by: FilteredSearch)
+        (reverse_groups: bool)
+        (sort_by: SortMethod)
+        (reverse_sorting: bool)
+        (ctx: LibraryViewContext)
+        : SortedGroups =
+
+        let groups = new Dictionary<Prelude.Calculator.Patterns.ChartTag, GroupWithSorting>()
+        for chart_meta in filter_by.Apply ctx.Library.Charts.Cache.Values do
+            for tag in chart_meta.Patterns.Tags do
+
+                if groups.ContainsKey tag |> not then
+                    groups.Add(
+                        tag,
+                        {
+                            Charts = ResizeArray<ChartMeta * LibraryContext * SortingTag>()
+                            Context = LibraryGroupContext.None
+                        }
+                    )
+
+                groups.[tag].Charts.Add(chart_meta, LibraryContext.Category tag, sort_by (chart_meta, ctx))
+
+        groups
+        |> Seq.sortBy (fun kvp -> kvp.Key)
+        |> if reverse_groups then Seq.rev else id
+        |> Seq.map (fun kvp -> kvp.Key.ToString(), kvp.Value.ToGroup reverse_sorting)
+
     let get_groups
         (filter_by: FilteredSearch)
-        (group_by: GroupMethod)
+        (group_by: LibraryView)
         (reverse_groups: bool)
         (sort_by: SortMethod)
         (reverse_sorting: bool)
@@ -209,17 +289,37 @@ module LibraryView =
 
         let groups =
             match group_by with
-            | Normal func ->
-                get_normal_groups filter_by func reverse_groups sort_by reverse_sorting ctx
+            | Groups func -> get_normal_groups filter_by func reverse_groups sort_by reverse_sorting ctx
+
             | Packs -> get_packs filter_by reverse_groups sort_by reverse_sorting ctx
+
             | Collections -> get_collection_groups filter_by reverse_groups sort_by reverse_sorting ctx
+
             | Levels ->
                 match table with
                 | Some t -> get_table_groups filter_by reverse_groups sort_by reverse_sorting t ctx
                 | None -> Seq.empty
 
+            | Category -> get_categories filter_by reverse_groups sort_by reverse_sorting ctx
+
+            | Suggestions suggestions_ctx ->
+
+                [
+                    "Suggestions for " + (fst suggestions_ctx.BaseChart).Title,
+                    {
+                        Charts =
+                            Endless.Suggestion.get_core_suggestions suggestions_ctx
+                            |> Seq.truncate 50
+                            |> Array.ofSeq
+                            |> Array.map (fun (chart_meta, rate) -> (chart_meta, LibraryContext.Suggestion rate, ("", chart_meta.Patterns.EstimatedDifficulty rate, 0.0f)))
+                            |> ResizeArray
+                        Context = LibraryGroupContext.None
+                    }
+                        .ToGroup reverse_sorting
+                ]
+
         match group_by with
-        | Normal _
+        | Groups _
         | Packs when always_show_collections ->
             let collections = get_collection_groups filter_by reverse_groups sort_by reverse_sorting ctx
             Seq.concat [collections; groups]

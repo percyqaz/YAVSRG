@@ -111,10 +111,10 @@ module Check =
                 if i < 9 then
                     find (sprintf "noteskin.notecolors.ddr.%i" i) "Note color tooltips"
 
-            for m in Prelude.Data.Library.Grouping.modes.Keys do
+            for m in Prelude.Data.Library.LibraryView.USER_SELECTABLE_VIEWS.Keys do
                 find (sprintf "levelselect.groupby.%s" m) "Level select grouping"
 
-            for m in Prelude.Data.Library.Sorting.modes.Keys do
+            for m in Prelude.Data.Library.Sorting.USER_SELECTABLE_SORTS.Keys do
                 find (sprintf "levelselect.sortby.%s" m) "Level select sorting"
 
         for m in found |> Seq.sort do

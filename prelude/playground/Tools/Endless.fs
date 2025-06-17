@@ -29,7 +29,7 @@ let test() =
         }
 
     let search = "getty jumper"
-    let search_result = LibraryView.get_groups (FilterParts.parse search |> FilteredSearch.Build) Grouping.modes.["pack"] false Sorting.modes.["difficulty"] false false None ctx
+    let search_result = LibraryView.get_groups (FilterParts.parse search |> FilteredSearch.Build) LibraryView.USER_SELECTABLE_VIEWS.["pack"] false Sorting.USER_SELECTABLE_SORTS.["difficulty"] false false None ctx
     let start = search_result |> Seq.head |> snd |> fun group -> fst group.Charts.[0]
 
     printfn "Starting with %s - %s [%s] by %s" start.Artist start.Title start.DifficultyName start.Creator
@@ -60,5 +60,5 @@ let test() =
             printfn ""
             match ChartDatabase.get_chart next.Chart.Hash library.Charts with
             | Ok chart ->
-                printfn "This is classed as: %A [%.2f]" (next.Chart.Patterns.Category) (Difficulty.calculate(1.0f<rate>, chart.Notes).Overall)
+                printfn "This is classed as: %A [%.2f]" (next.Chart.Patterns.Tags) (Difficulty.calculate(1.0f<rate>, chart.Notes).Overall)
             | Error reason -> ()

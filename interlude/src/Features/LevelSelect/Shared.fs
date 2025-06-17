@@ -3,7 +3,6 @@
 open Percyqaz.Common
 open Percyqaz.Flux.Windowing
 open Prelude
-open Prelude.Skins.Noteskins
 open Prelude.Data.User
 open Prelude.Data.Library
 open Prelude.Data.Library.Endless
@@ -42,6 +41,7 @@ module LevelSelect =
         )
 
     let mutable filter: FilteredSearch = FilteredSearch.Empty
+    let mutable view_override: LibraryView option = None
 
     module History =
 
@@ -69,7 +69,7 @@ module LevelSelect =
                     SelectedChart.change(chart_meta, LibraryContext.None, true)
                 | _ -> ()
 
-        let can_go_back() = (List.isEmpty >> not) history
+        let can_go_back () = (List.isEmpty >> not) history
 
         let forward () =
             if not (Transitions.in_progress()) then
@@ -114,24 +114,26 @@ module LevelSelect =
                 Transitions.EnterGameplayFadeAudio
         then enter_gameplay info.LibraryContext
 
+    let internal make_suggestion_ctx () =
+        {
+            BaseChart = SelectedChart.CACHE_DATA.Value, SelectedChart.rate.Value
+            MinimumRate = if options.SuggestionsEnableRates.Value then options.SuggestionsMinRate.Value else SelectedChart.rate.Value
+            MaximumRate = if options.SuggestionsEnableRates.Value then options.SuggestionsMaxRate.Value else SelectedChart.rate.Value
+            OnlyNewCharts = options.SuggestionsOnlyNew.Value
+            Filter = filter.WithoutSearchTerms
+            Mods = SelectedChart.selected_mods.Value
+            RulesetId = Rulesets.current_hash
+            Ruleset = Rulesets.current
+            Library = Content.Library
+            UserDatabase = Content.UserData
+        }
+
     let continue_endless_mode () : bool =
         if Transitions.in_progress() then false else
 
         let ctx =
             match suggestion_ctx with
-            | None ->
-                {
-                    BaseChart = SelectedChart.CACHE_DATA.Value, SelectedChart.rate.Value
-                    MinimumRate = if options.SuggestionsEnableRates.Value then options.SuggestionsMinRate.Value else SelectedChart.rate.Value
-                    MaximumRate = if options.SuggestionsEnableRates.Value then options.SuggestionsMaxRate.Value else SelectedChart.rate.Value
-                    OnlyNewCharts = options.SuggestionsOnlyNew.Value
-                    Filter = filter.WithoutSearchTerms
-                    Mods = SelectedChart.selected_mods.Value
-                    RulesetId = Rulesets.current_hash
-                    Ruleset = Rulesets.current
-                    Library = Content.Library
-                    UserDatabase = Content.UserData
-                }
+            | None -> make_suggestion_ctx()
             | Some ctx -> ctx
 
         match EndlessModeState.next ctx state with
@@ -178,19 +180,7 @@ module LevelSelect =
 
         if not (Transitions.in_progress()) then
             if SelectedChart.DIFFICULTY.IsSome then
-                let ctx =
-                    {
-                        BaseChart = SelectedChart.CACHE_DATA.Value, SelectedChart.rate.Value
-                        MinimumRate = if options.SuggestionsEnableRates.Value then options.SuggestionsMinRate.Value else SelectedChart.rate.Value
-                        MaximumRate = if options.SuggestionsEnableRates.Value then options.SuggestionsMaxRate.Value else SelectedChart.rate.Value
-                        OnlyNewCharts = false
-                        Filter = filter
-                        Mods = SelectedChart.selected_mods.Value
-                        RulesetId = Rulesets.current_hash
-                        Ruleset = Rulesets.current
-                        Library = Content.Library
-                        UserDatabase = Content.UserData
-                    }
+                let ctx = make_suggestion_ctx()
 
                 match Suggestion.get_suggestion ctx with
                 | Some (chart_meta, rate) ->
@@ -219,6 +209,11 @@ module LevelSelect =
                     |> ignore
                 else
                     play info
+
+    let show_suggestions () : unit =
+        if SelectedChart.CACHE_DATA.IsSome then
+            view_override <- Some(Suggestions(make_suggestion_ctx()))
+            refresh_all()
 
     let challenge_score (score_info: ScoreInfo) : unit =
         SelectedChart.rate.Set score_info.Rate

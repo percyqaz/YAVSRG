@@ -64,9 +64,13 @@ module Tree =
 
             LibraryView.get_groups
                 LevelSelect.filter
-                Grouping.modes.[options.ChartGroupMode.Value]
+                (
+                    match LevelSelect.view_override with
+                    | Some v -> v
+                    | None -> LibraryView.USER_SELECTABLE_VIEWS.[options.ChartGroupMode.Value]
+                )
                 options.ChartGroupReverse.Value
-                Sorting.modes.[options.ChartSortMode.Value]
+                Sorting.USER_SELECTABLE_SORTS.[options.ChartSortMode.Value]
                 options.ChartSortReverse.Value
                 options.TreeAlwaysShowCollections.Value
                 Content.Table
@@ -218,9 +222,11 @@ module Tree =
             | Some s -> s.ShowActions()
             | None ->
 
-            match SelectedChart.CACHE_DATA with
-            | Some chart_meta -> ChartContextMenu(chart_meta, SelectedChart.LIBRARY_CTX).Show()
-            | _ -> ()
+            LevelSelect.show_suggestions()
+
+            //match SelectedChart.CACHE_DATA with
+            //| Some chart_meta -> ChartContextMenu(chart_meta, SelectedChart.LIBRARY_CTX).Show()
+            //| _ -> ()
         elif (%%"clear_multi_select").Pressed() then tree_ctx.MultiSelection <- None
         else
 

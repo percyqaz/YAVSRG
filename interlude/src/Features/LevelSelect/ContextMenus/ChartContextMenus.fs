@@ -84,7 +84,9 @@ type ChartContextMenu(chart_meta: ChartMeta, context: LibraryContext) =
         | LibraryContext.None
         | LibraryContext.Likes
         | LibraryContext.Pack _
-        | LibraryContext.Table _ -> ()
+        | LibraryContext.Table _
+        | LibraryContext.Category _
+        | LibraryContext.Suggestion _ -> ()
         | LibraryContext.Folder name ->
             content
             |* PageButton(

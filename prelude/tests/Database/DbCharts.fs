@@ -39,7 +39,7 @@ module DbCharts =
             BPM = 120
             DateAdded = Timestamp.now()
             Rating = 5.00f
-            Patterns = PatternReport.Default
+            Patterns = LibraryPatternInfo.Default
         }
 
     let TEST_CHART_META_ALT : ChartMeta =
@@ -64,7 +64,7 @@ module DbCharts =
             BPM = 121
             DateAdded = Timestamp.now() - 100L
             Rating = 10.00f
-            Patterns = PatternReport.Default
+            Patterns = LibraryPatternInfo.Default
         }
 
     let TEST_CHART_META_NAN : ChartMeta =

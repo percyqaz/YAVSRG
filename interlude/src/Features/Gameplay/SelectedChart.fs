@@ -364,6 +364,7 @@ module SelectedChart =
         (mods: Setting<ModState>) : unit
         =
         match library_ctx with
+        | LibraryContext.Suggestion r -> rate.Value <- r
         | LibraryContext.Playlist(_, _, d) ->
             rate.Value <- d.Rate.Value
             mods.Value <- d.Mods.Value

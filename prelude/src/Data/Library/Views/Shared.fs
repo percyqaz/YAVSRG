@@ -2,6 +2,7 @@
 
 open System
 open Percyqaz.Common
+open Prelude
 open Prelude.Calculator.Patterns
 open Prelude.Data.User
 open Prelude.Data.Library
@@ -101,20 +102,28 @@ type LibraryContext =
     | Pack of name: string
     | Table of level: int
     | Likes
+    | Category of ChartTag
     | Folder of id: string
     | Playlist of index: int * id: string * data: PlaylistEntryInfo
+    | Suggestion of rate: Rate
 
     member this.Matches(other: LibraryContext) : bool =
         match this, other with
         | None, None -> true
         | None, Pack _ -> true
+        | None, Category _ -> true
+        | None, Suggestion _ -> true
         | Pack p, Pack p2 when p = p2 -> true
         | Pack _, None -> true
         | Table _, Table _ -> true
         | Likes, Likes -> true
+        | Category t, Category t2 when t = t2 -> true
         | Folder f, Folder f2 when f = f2 -> true
         | Playlist (i, id, _), Playlist (i2, id2, _) when i = i2 && id = id2 -> true
+        | Suggestion _, None -> true
+        | Suggestion _, Suggestion _ -> true
         | _ -> false
+
     member this.SoftMatches(other: LibraryContext) : bool =
         match this, other with
         | None, _ -> true
@@ -124,6 +133,9 @@ type LibraryContext =
         | Folder _, Pack _ -> true
         | Likes, None -> true
         | Likes, Pack _ -> true
+        | Category _, None -> true
+        | Suggestion _, None -> true
+        | Suggestion _, Pack _ -> true
         | _ -> this.Matches other
 
 [<RequireQualifiedAccess>]
